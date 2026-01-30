@@ -2,16 +2,26 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
+use Spatie\Permission\Traits\HasPermissions;
 
-class User extends Authenticatable
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use App\Models\UserAddress;
+use App\Models\UserContact;
+use App\Notifications\VerifyEmailNotification;
+use App\Notifications\PasswordResetRequestNotification;
+
+
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasRoles, HasPermissions, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -19,9 +29,13 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'fname',
+        'lname',
         'email',
         'password',
+        'email_verified_at',
+        'email_verification_token',
+        'email_verification_token_expires_at',
     ];
 
     /**
@@ -49,4 +63,54 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
+
+    public function sendPasswordResetNotification($token)
+    {
+        // This triggers your custom notification instead of the default one
+        $this->notify(new PasswordResetRequestNotification($token));
+    }
+
+   public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification);
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        // return (bool) ($this->email_verified_at !== null);
+        return !is_null($this->email_verified_at);
+    }
+
+
+    public function isBlocked(): bool
+    {
+        return (bool) $this->is_blocked;
+    }
+
+
+    /**
+     * A user can have many addresses (Home, Work, etc.)
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class);
+    }
+
+    /**
+     * A user can have many contact numbers.
+     */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(UserContact::class);
+    }
+
+    /**
+     * Get the user's full name.
+     * Usage: $user->full_name
+     */
+    public function getFullNameAttribute(): string
+    {
+        return "{$this->fname} {$this->lname}";
+    }
+
 }

@@ -13,6 +13,9 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
+use Laravel\Fortify\Http\Responses\LoginResponse;
+use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
@@ -31,6 +34,16 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+
+        // Override the default LoginResponse
+        // $this->app->instance(LoginResponseContract::class, new class implements LoginResponseContract {
+        //     public function toResponse($request)
+        //     {
+        //         // This checks the session for an 'intended' URL
+        //         // If none exists, it falls back to your dashboard
+        //         return redirect()->intended(config('fortify.home'));
+        //     }
+        // });
     }
 
     /**
@@ -66,8 +79,11 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
-
+        
+        Fortify::registerView(function () {
+            abort(404);
+        });
+    
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,5 +44,7 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null
         );
+
+        JsonResource::withoutWrapping();
     }
 }

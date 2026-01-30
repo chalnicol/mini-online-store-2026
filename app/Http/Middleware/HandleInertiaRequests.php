@@ -4,6 +4,10 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Category;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\UserResource;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,13 +39,29 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() 
+                ? new UserResource($request->user()) 
+                : null,
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'categories' =>Cache::rememberForever('global_category_tree', function () {
+                $tree = Category::whereNull('parent_id')
+                    ->with('childrenRecursive')
+                    ->orderBy('name', 'asc')
+                    ->get();
+
+                return CategoryResource::collection($tree)->resolve();
+            }),
+            
+            // 'flash' => [
+            //     'success' => $request->session()->get('success') ?? $request->session()->get('status'),
+            //     'error' => $request->session()->get('error'),
+            // ],
+            // 'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
 }

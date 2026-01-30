@@ -19,13 +19,21 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+
+        $messages = [
+            'password.regex' => 'Your password must contain at least one uppercase letter, one number, and one special character.',
+            // 'fname.required' => 'Please tell us your first name.',
+        ];
+
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
         ])->validate();
 
         return User::create([
-            'name' => $input['name'],
+            'fname' => ucfirst($input['fname']),
+            'lname' => ucfirst($input['lname']),
             'email' => $input['email'],
             'password' => $input['password'],
         ]);

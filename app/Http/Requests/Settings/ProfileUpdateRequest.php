@@ -19,4 +19,15 @@ class ProfileUpdateRequest extends FormRequest
     {
         return $this->profileRules($this->user()->id);
     }
+
+    public function attributes(): array
+    {
+        return [
+            'fname' => 'First Name',
+            'lname' => 'Last Name',
+            // 'email' => 'Email Address',
+            // 'current_password' => 'Current Password',
+        ];
+    }
+
 }

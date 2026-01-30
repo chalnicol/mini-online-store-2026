@@ -14,6 +14,7 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    
     /**
      * Show the user's profile settings page.
      */
@@ -38,7 +39,8 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return to_route('profile.edit');
+        // return to_route('profile.edit');
+        return back();
     }
 
     /**

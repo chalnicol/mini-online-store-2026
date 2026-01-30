@@ -1,16 +1,13 @@
-import { Form, Head } from '@inertiajs/react';
+import gsap from 'gsap';
+import React, { useEffect, useRef, useState } from 'react';
 
-import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { register } from '@/routes';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
+import LoginForm from '@/components/store/auth/LoginForm';
+import RegisterForm from '@/components/store/auth/RegisterForm';
+import CustomLayout from '@/layouts/app-custom-layout';
+import { Head } from '@inertiajs/react';
+// import { useAuth } from "@/context/AuthContext";
+
+type LoginTab = 'login' | 'register';
 
 interface LoginProps {
     status?: string;
@@ -18,104 +15,89 @@ interface LoginProps {
     canRegister: boolean;
 }
 
-export default function Login({
-    status,
-    canResetPassword,
-    canRegister,
-}: LoginProps) {
+const Login = ({ status, canResetPassword, canRegister }: LoginProps) => {
+    console.log(status, canResetPassword, canRegister);
+
+    const [tab, setTab] = useState<LoginTab>('login');
+
+    const registerContRef = useRef<HTMLDivElement>(null);
+    const loginContRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // clearPrompts();
+
+        if (registerContRef.current && loginContRef.current) {
+            gsap.to([loginContRef.current, registerContRef.current], {
+                xPercent: tab == 'register' ? -100 : 0,
+                duration: 0.25,
+                ease: 'power3.out',
+                stagger: {
+                    each: 0.1,
+                    from: tab == 'register' ? 'start' : 'end',
+                },
+            });
+        }
+        return () => {
+            gsap.killTweensOf([loginContRef.current, registerContRef.current]);
+        };
+    }, [tab]);
+
     return (
-        <AuthLayout
-            title="Log in to your account"
-            description="Enter your email and password below to log in"
-        >
-            <Head title="Log in" />
-
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={5}
-                                        >
-                                            Forgot password?
-                                        </TextLink>
-                                    )}
-                                </div>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">Remember me</Label>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="mt-4 w-full"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                            >
-                                {processing && <Spinner />}
-                                Log in
-                            </Button>
-                        </div>
-
-                        {canRegister && (
-                            <div className="text-center text-sm text-muted-foreground">
-                                Don't have an account?{' '}
-                                <TextLink href={register()} tabIndex={5}>
-                                    Sign up
-                                </TextLink>
-                            </div>
-                        )}
-                    </>
-                )}
-            </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
+        <>
+            <Head title={tab == 'login' ? 'Login' : 'Register'} />
+            <div className="mx-auto max-w-md px-3">
+                {/* tabs */}
+                <div className="mt-3 mb-2 space-x-1 border-b border-gray-400">
+                    <button
+                        className={`min-w-20 rounded-t border border-b-0 px-2 py-1 font-semibold ${
+                            tab == 'login'
+                                ? 'border-sky-800 bg-sky-900 text-white'
+                                : 'cursor-pointer border-gray-400 bg-white hover:bg-gray-100'
+                        }`}
+                        onClick={() => setTab('login')}
+                        disabled={tab == 'login'}
+                    >
+                        Login
+                    </button>
+                    {canRegister && (
+                        <button
+                            className={`min-w-20 rounded-t border border-b-0 px-2 py-1 font-semibold ${
+                                tab == 'register'
+                                    ? 'border-sky-800 bg-sky-900 text-white'
+                                    : 'cursor-pointer border-gray-400 bg-white hover:bg-gray-100'
+                            }`}
+                            onClick={() => setTab('register')}
+                            disabled={tab == 'register'}
+                        >
+                            Register
+                        </button>
+                    )}
                 </div>
-            )}
-        </AuthLayout>
+
+                <div className="relative flex h-full overflow-x-hidden">
+                    {/* login form */}
+                    <div ref={loginContRef} className="w-full flex-none px-1">
+                        <LoginForm
+                            key={tab}
+                            tab={tab}
+                            canResetPassword={canResetPassword}
+                        />
+                    </div>
+                    {/* register form */}
+                    {canRegister && (
+                        <div
+                            ref={registerContRef}
+                            className="w-full flex-none px-1"
+                        >
+                            <RegisterForm key={tab} tab={tab} />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
     );
-}
+};
+
+Login.layout = (page: React.ReactNode) => <CustomLayout>{page}</CustomLayout>;
+
+export default Login;

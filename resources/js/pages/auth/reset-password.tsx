@@ -1,94 +1,99 @@
-import { Form, Head } from '@inertiajs/react';
-
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { update } from '@/routes/password';
+import CustomButton from '@/components/store/CustomButton';
+import PromptMessage from '@/components/store/PromptMessage';
+import TextInput from '@/components/store/TextInput';
+import TitleBar from '@/components/store/TitleBar';
+import { formRules } from '@/data';
+import CustomLayout from '@/layouts/app-custom-layout';
+import { ResetPasswordPayload } from '@/types/store';
+import { Head, useForm } from '@inertiajs/react';
+import React from 'react';
 
 interface ResetPasswordProps {
     token: string;
     email: string;
 }
 
-export default function ResetPassword({ token, email }: ResetPasswordProps) {
+const ResetPassword = ({ token, email }: ResetPasswordProps) => {
+    // const [success, setSuccess] = useState('');
+
+    const { data, setData, processing, hasErrors, errors, reset, post } =
+        useForm<ResetPasswordPayload>({
+            token: token,
+            email: email,
+            password: '',
+            password_confirmation: '',
+        });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        post('/reset-password', {
+            // Fortify's default reset route
+            onFinish: () => reset(),
+        });
+    };
+
     return (
-        <AuthLayout
-            title="Reset password"
-            description="Please enter your new password below"
-        >
-            <Head title="Reset password" />
+        <>
+            <Head title="Reset Password" />
+            <div className="mx-auto mt-6 max-w-md px-3">
+                <TitleBar title="Reset Password" className="mb-2" />
 
-            <Form
-                {...update.form()}
-                transform={(data) => ({ ...data, token, email })}
-                resetOnSuccess={['password', 'password_confirmation']}
-            >
-                {({ processing, errors }) => (
-                    <div className="grid gap-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                name="email"
-                                autoComplete="email"
-                                value={email}
-                                className="mt-1 block w-full"
-                                readOnly
-                            />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                name="password"
-                                autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                autoFocus
-                                placeholder="Password"
-                            />
-                            <InputError message={errors.password} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">
-                                Confirm password
-                            </Label>
-                            <Input
-                                id="password_confirmation"
-                                type="password"
-                                name="password_confirmation"
-                                autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                placeholder="Confirm password"
-                            />
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="mt-4 w-full"
-                            disabled={processing}
-                            data-test="reset-password-button"
-                        >
-                            {processing && <Spinner />}
-                            Reset password
-                        </Button>
-                    </div>
+                {hasErrors && (
+                    <PromptMessage
+                        type="error"
+                        errors={errors}
+                        className="mt-1 mb-3"
+                    />
                 )}
-            </Form>
-        </AuthLayout>
+
+                <form onSubmit={handleSubmit} className="space-y-2">
+                    <TextInput
+                        type="text"
+                        className=""
+                        placeholder="email"
+                        value={data.email}
+                        readOnly={true}
+                        required={true}
+                        // rules={formRules.email}
+                    />
+                    <TextInput
+                        type="password"
+                        className=""
+                        placeholder="password"
+                        value={data.password}
+                        onChange={(e) => setData('password', e.target.value)}
+                        required={true}
+                        rules={formRules.password}
+                    />
+                    <TextInput
+                        type="password"
+                        className=""
+                        placeholder="confirm password"
+                        value={data.password_confirmation}
+                        onChange={(e) =>
+                            setData('password_confirmation', e.target.value)
+                        }
+                        required={true}
+                        rules={formRules.passwordConfirmation}
+                    />
+
+                    <CustomButton
+                        type="submit"
+                        label="Submit"
+                        color="primary"
+                        size="lg"
+                        loading={processing}
+                        disabled={processing}
+                        className="w-full"
+                    />
+                </form>
+            </div>
+        </>
     );
-}
+};
+
+ResetPassword.layout = (page: React.ReactNode) => (
+    <CustomLayout>{page}</CustomLayout>
+);
+
+export default ResetPassword;

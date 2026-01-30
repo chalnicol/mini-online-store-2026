@@ -1,69 +1,83 @@
-// Components
-import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import CustomButton from '@/components/store/CustomButton';
+import PromptMessage from '@/components/store/PromptMessage';
+import TextInput from '@/components/store/TextInput';
+import TitleBar from '@/components/store/TitleBar';
+import CustomLayout from '@/layouts/app-custom-layout';
+import { Head, useForm } from '@inertiajs/react';
+import React from 'react';
 
-import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/auth-layout';
-import { login } from '@/routes';
-import { email } from '@/routes/password';
-
-export default function ForgotPassword({ status }: { status?: string }) {
-    return (
-        <AuthLayout
-            title="Forgot password"
-            description="Enter your email to receive a password reset link"
-        >
-            <Head title="Forgot password" />
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
-
-            <div className="space-y-6">
-                <Form {...email.form()}>
-                    {({ processing, errors }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    autoComplete="off"
-                                    autoFocus
-                                    placeholder="email@example.com"
-                                />
-
-                                <InputError message={errors.email} />
-                            </div>
-
-                            <div className="my-6 flex items-center justify-start">
-                                <Button
-                                    className="w-full"
-                                    disabled={processing}
-                                    data-test="email-password-reset-link-button"
-                                >
-                                    {processing && (
-                                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                                    )}
-                                    Email password reset link
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </Form>
-
-                <div className="space-x-1 text-center text-sm text-muted-foreground">
-                    <span>Or, return to</span>
-                    <TextLink href={login()}>log in</TextLink>
-                </div>
-            </div>
-        </AuthLayout>
-    );
+interface ForgotPasswordProps {
+    status?: string;
 }
+
+const ForgotPassword = ({ status }: ForgotPasswordProps) => {
+    const { data, setData, processing, hasErrors, errors, reset, post } =
+        useForm({
+            email: '',
+        });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        // Handle forgot password logic here
+        // console.log({ email });
+        post('/forgot-password', {
+            onFinish: () => {
+                reset();
+            },
+        });
+    };
+
+    return (
+        <>
+            <Head title="Forgot Password" />
+            <div className="mx-auto mt-3 max-w-md px-3">
+                <TitleBar title="Forgot Password" className="mb-2" />
+
+                {hasErrors && (
+                    <PromptMessage
+                        type="error"
+                        errors={errors}
+                        className="mt-1 mb-3"
+                    />
+                )}
+                {status && (
+                    <PromptMessage
+                        type="success"
+                        message={status}
+                        className="mt-1 mb-3"
+                    />
+                )}
+
+                <p className="my-2 text-sm leading-normal">
+                    Enter your email address below and we'll send you
+                    instructions to reset.
+                </p>
+                <form onSubmit={handleSubmit} className="space-y-2">
+                    <TextInput
+                        type="text"
+                        className=""
+                        placeholder="email"
+                        value={data.email}
+                        onChange={(e) => setData('email', e.target.value)}
+                        required={true}
+                    />
+                    <CustomButton
+                        type="submit"
+                        label="Submit"
+                        color="primary"
+                        size="lg"
+                        loading={processing}
+                        disabled={processing}
+                        className="mt-2 w-full"
+                    />
+                </form>
+            </div>
+        </>
+    );
+};
+
+ForgotPassword.layout = (page: React.ReactNode) => (
+    <CustomLayout>{page}</CustomLayout>
+);
+
+export default ForgotPassword;

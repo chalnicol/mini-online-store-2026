@@ -1,45 +1,69 @@
-// Components
-import { Form, Head } from '@inertiajs/react';
+import CustomButton from '@/components/store/CustomButton';
+import PromptMessage from '@/components/store/PromptMessage';
+import TitleBar from '@/components/store/TitleBar';
+import CustomLayout from '@/layouts/app-custom-layout';
+import { Head, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { logout } from '@/routes';
-import { send } from '@/routes/verification';
-
-export default function VerifyEmail({ status }: { status?: string }) {
-    return (
-        <AuthLayout
-            title="Verify email"
-            description="Please verify your email address by clicking on the link we just emailed to you."
-        >
-            <Head title="Email verification" />
-
-            {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
-                </div>
-            )}
-
-            <Form {...send.form()} className="space-y-6 text-center">
-                {({ processing }) => (
-                    <>
-                        <Button disabled={processing} variant="secondary">
-                            {processing && <Spinner />}
-                            Resend verification email
-                        </Button>
-
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm"
-                        >
-                            Log out
-                        </TextLink>
-                    </>
-                )}
-            </Form>
-        </AuthLayout>
-    );
+interface VerifyEmailProps {
+    status?: string;
 }
+
+const VerifyEmail = ({ status }: VerifyEmailProps) => {
+    const [success, setSuccess] = useState('');
+    const { post, processing } = useForm({});
+
+    const handleResendEmail = () => {
+        // Handle resend email logic here
+        // console.log({ email });
+        post('/email/verification-notification', {
+            onFinish: () => {
+                setSuccess('Email sent successfully');
+            },
+        });
+    };
+
+    const message =
+        ' A verification link has been sent to your email address. Please click the link to confirm your account.';
+
+    return (
+        <>
+            <Head title="Verify Email" />
+            <div className="mx-auto mt-6 max-w-md px-3">
+                <TitleBar title="Verify Email" className="mb-3" />
+
+                <div className="space-y-3">
+                    {status && (
+                        <PromptMessage
+                            type="success"
+                            message={message}
+                            className="mt-1 mb-3"
+                        />
+                    )}
+
+                    <div className="space-y-2 rounded border border-gray-300 px-3 py-2 shadow">
+                        <p className="text-sm font-semibold text-gray-500">
+                            Didn't receive the email?
+                        </p>
+                        <CustomButton
+                            type="button"
+                            label="Resend Email"
+                            color="primary"
+                            size="lg"
+                            loading={processing}
+                            disabled={processing}
+                            onClick={handleResendEmail}
+                            className="w-full"
+                        />
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
+VerifyEmail.layout = (page: React.ReactNode) => (
+    <CustomLayout>{page}</CustomLayout>
+);
+
+export default VerifyEmail;
