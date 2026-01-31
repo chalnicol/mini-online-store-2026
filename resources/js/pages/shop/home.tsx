@@ -15,23 +15,14 @@ const Home = ({ data }: HomeProps) => {
     const [items, setItems] = useState<Product[]>(data.data);
 
     const {
+        view,
         isCategoryListOpen,
         showCategoryList,
         loadMore,
         isProcessing,
-        sortOrder,
-        setSortOrder,
     } = useFilterSearch();
 
-    const [view, setView] = useState<'grid' | 'list'>('grid');
-
     const categoriesRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (isCategoryListOpen) {
-            showCategoryList(false);
-        }
-    }, []);
 
     // Sync items when data props change (from Filter or Load More)
     useEffect(() => {
@@ -75,15 +66,9 @@ const Home = ({ data }: HomeProps) => {
                 </div>
 
                 <div className="mb-6">
+                    <SortAndView className="my-3" itemsCount={items.length} />
                     {items.length > 0 ? (
                         <>
-                            <SortAndView
-                                view={view}
-                                sortOption={sortOrder || 'date-desc'}
-                                onViewChange={(view) => setView(view)}
-                                onSortChange={setSortOrder}
-                                className="my-3"
-                            />
                             <div
                                 className={`flex-1 ${
                                     view == 'grid'
@@ -102,13 +87,10 @@ const Home = ({ data }: HomeProps) => {
 
                             <div
                                 ref={loadMoreRef}
-                                className="mt-10 flex h-20 items-center justify-center"
+                                className="mt-3 flex h-20 items-center justify-center"
                             >
                                 {isProcessing && (
                                     <div className="flex items-center space-x-2">
-                                        <div className="h-2 w-2 animate-bounce rounded-full bg-gray-500"></div>
-                                        <div className="h-2 w-2 animate-bounce rounded-full bg-gray-500 [animation-delay:-0.15s]"></div>
-                                        <div className="h-2 w-2 animate-bounce rounded-full bg-gray-500 [animation-delay:-0.3s]"></div>
                                         <span className="text-sm text-gray-500">
                                             Loading more products...
                                         </span>
@@ -116,9 +98,9 @@ const Home = ({ data }: HomeProps) => {
                                 )}
 
                                 {!hasMore && items.length > 0 && (
-                                    <p className="text-sm text-gray-400 italic">
-                                        You've reached the end of the
-                                        collection.
+                                    <p className="text-sm tracking-wider text-gray-500 uppercase">
+                                        -- You've reached the end of the
+                                        collection --.
                                     </p>
                                 )}
                             </div>

@@ -2,15 +2,7 @@ import { useFilterSearch } from '@/context/FilterSearchContext';
 import { useOutsideClick } from '@/hooks/user-outside-click';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import gsap from 'gsap';
-import {
-    Bell,
-    ChevronDown,
-    ChevronUp,
-    Menu,
-    ShoppingCart,
-    User,
-    X,
-} from 'lucide-react';
+import { Bell, ChevronDown, Menu, ShoppingCart, User, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 const Navbar: React.FC = () => {
@@ -21,6 +13,8 @@ const Navbar: React.FC = () => {
     const { post } = useForm();
 
     const user = auth.user;
+
+    const { resetAll } = useFilterSearch();
 
     const [showHiddenMenu, setShowHiddenMenu] = useState<boolean>(false);
     const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
@@ -175,7 +169,14 @@ const Navbar: React.FC = () => {
         <nav className="flex h-14 border-b border-gray-300 bg-gray-100">
             <div className="mx-auto flex w-full max-w-7xl items-center px-4 text-gray-600">
                 <div className="navbar-brand">
-                    <Link href="/" className="text-lg font-bold">
+                    <Link
+                        href="/"
+                        onClick={(e) => {
+                            e.preventDefault(); // Stop the default Inertia visit
+                            resetAll(); // Use our custom reset logic
+                        }}
+                        className="text-lg font-bold"
+                    >
                         Nicolas Online Store
                     </Link>
                 </div>
@@ -186,8 +187,7 @@ const Navbar: React.FC = () => {
                             <li className="relative">
                                 <Link
                                     href="/cart"
-                                    as={url === '/cart' ? 'span' : 'a'}
-                                    className="flex aspect-square items-center justify-center gap-x-1 rounded-full border border-gray-400 px-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95"
+                                    className={`flex aspect-square items-center justify-center gap-x-1 rounded-full border border-gray-400 px-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95`}
                                 >
                                     <ShoppingCart size={18} />
                                 </Link>
@@ -198,6 +198,8 @@ const Navbar: React.FC = () => {
                             <li className="relative">
                                 <Link
                                     href="/profile/notifications"
+                                    only={['data']}
+                                    preserveState
                                     className="flex aspect-square items-center justify-center gap-x-1 rounded-full border border-gray-400 px-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95"
                                 >
                                     <Bell size={18} />
@@ -216,11 +218,15 @@ const Navbar: React.FC = () => {
                                     <span className="text-sm font-semibold tracking-wider text-gray-600 uppercase">
                                         {user.fname}
                                     </span>
-                                    {showProfileMenu ? (
+                                    {/* {showProfileMenu ? (
                                         <ChevronUp size={18} />
                                     ) : (
                                         <ChevronDown size={18} />
-                                    )}
+                                    )} */}
+                                    <ChevronDown
+                                        size={14}
+                                        className={`transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`}
+                                    />
                                 </button>
                                 {showProfileMenu && (
                                     <div

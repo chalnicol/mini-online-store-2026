@@ -74,7 +74,7 @@ const Checkout = ({ addresses }: { addresses: AddressDetails[] }) => {
     return (
         <>
             <div className="mx-auto mt-4 w-full max-w-7xl px-4">
-                <TitleBar title="Checkout" className="mb-4" animated={true} />
+                <TitleBar title="Checkout" className="mb-4" />
 
                 <div className="flex flex-col gap-6 lg:flex-row">
                     <div className="flex-1 space-y-6">

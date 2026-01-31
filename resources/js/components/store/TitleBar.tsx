@@ -1,17 +1,14 @@
-import gsap from 'gsap';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 interface TitleBarProps {
     title: string;
     className?: string;
-    animated?: boolean;
     size?: 'sm' | 'md' | 'lg';
     color?: 'primary' | 'secondary';
 }
 
 const TitleBar: React.FC<TitleBarProps> = ({
     title,
-    animated = false,
     size = 'md',
     color = 'primary',
     className,
@@ -28,26 +25,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
         primary: 'bg-sky-900 text-white',
         secondary: ' border-gray-300 bg-gray-100 text-gray-500',
     };
-
-    useEffect(() => {
-        if (animated && titleRef.current) {
-            gsap.fromTo(
-                titleRef.current,
-                { yPercent: 100 },
-                {
-                    yPercent: 0,
-                    duration: 0.5,
-                    ease: 'power2.out',
-                },
-            );
-        }
-
-        return () => {
-            if (animated && titleRef.current) {
-                gsap.killTweensOf(titleRef.current);
-            }
-        };
-    }, [animated]);
 
     return (
         <div

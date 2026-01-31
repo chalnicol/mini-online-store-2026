@@ -5,30 +5,51 @@ import { useEffect, useRef } from 'react';
 import CategoryList from './CategoryList';
 
 const FilterSearch: React.FC = () => {
-    const { isCategoryListOpen, showCategoryList, searchTerm, setSearched } =
-        useFilterSearch();
+    const {
+        isCategoryListOpen,
+        selectedCategorySlug,
+        showCategoryList,
+        searchTerm,
+        setSearched,
+    } = useFilterSearch();
     const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+    const closingTimeline = useRef<gsap.core.Timeline | null>(null);
 
     // 1. Unified Close Logic: Animate THEN update state
     const handleClose = () => {
-        const tl = gsap.timeline({
-            onComplete: () => showCategoryList(false), // Remove from DOM only when done
+        if (closingTimeline.current?.isActive()) return;
+
+        closingTimeline.current = gsap.timeline({
+            onComplete: () => {
+                showCategoryList(false);
+                closingTimeline.current = null;
+            },
         });
 
-        tl.to(itemsRef.current[0], {
-            opacity: 0,
-            duration: 0.3,
-            ease: 'power2.in',
-        }).to(
-            itemsRef.current[1],
-            {
-                xPercent: -100, // Slide back out
+        closingTimeline.current
+            .to(itemsRef.current[0], {
+                opacity: 0,
                 duration: 0.3,
                 ease: 'power2.in',
-            },
-            '<',
-        ); // Start at the same time as the fade
+            })
+            .to(
+                itemsRef.current[1],
+                {
+                    xPercent: -100, // Slide back out
+                    duration: 0.3,
+                    ease: 'power2.in',
+                },
+                '<',
+            ); // Start at the same time as the fade
     };
+
+    // Cleanup animations on unmount
+    useEffect(() => {
+        return () => {
+            closingTimeline.current?.kill();
+        };
+    }, []);
 
     // 2. Open Animation Logic
     useEffect(() => {
@@ -52,15 +73,17 @@ const FilterSearch: React.FC = () => {
                 },
                 '-=0.2',
             );
-
-            // return () => {
-            //     tl.kill();
-            // };
         }
         return () => {
             tl.kill();
         };
     }, [isCategoryListOpen]);
+
+    useEffect(() => {
+        if (isCategoryListOpen && selectedCategorySlug !== null) {
+            handleClose();
+        }
+    }, [selectedCategorySlug]);
 
     return (
         <div className="mt-4 flex gap-x-1.5 md:gap-x-2">
@@ -96,20 +119,18 @@ const FilterSearch: React.FC = () => {
                         ref={(el) => {
                             itemsRef.current[1] = el;
                         }}
-                        className="relative h-full w-full max-w-[300px] overflow-y-auto bg-white shadow-xl"
+                        className="relative h-full w-full max-w-[300px] overflow-y-auto bg-white shadow-xl md:max-w-[340px]"
                     >
-                        <div className="flex items-center justify-between bg-gray-200 p-3">
-                            <span className="font-bold text-gray-500">
-                                Categories
-                            </span>
+                        <div className="sticky top-0 z-50 flex items-center justify-between bg-sky-900 p-3 text-white">
+                            <span className="font-bold">Categories</span>
                             <button
                                 onClick={handleClose}
-                                className="cursor-pointer rounded border border-gray-400 px-1 text-xs text-gray-400 shadow hover:bg-gray-100 hover:text-gray-600"
+                                className="cursor-pointer rounded border px-1 text-xs text-white shadow hover:bg-white/20"
                             >
                                 close
                             </button>
                         </div>
-                        <div className="p-3">
+                        <div className="px-3">
                             <CategoryList />
                         </div>
                     </div>

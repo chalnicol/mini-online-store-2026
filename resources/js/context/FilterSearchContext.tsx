@@ -6,6 +6,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 export interface FilterSearchContextType {
     categories: Category[];
     selectedCategorySlug: string | null;
+    selectedCategory: string | null;
     setSelectedSlug: (slug: string | null) => void;
     searchTerm: string;
     setSearched: (term: string) => void;
@@ -16,9 +17,13 @@ export interface FilterSearchContextType {
     isProcessing: boolean;
     isCategoryListOpen: boolean;
     showCategoryList: (show: boolean) => void;
+    view: 'grid' | 'list';
+    changeView: (view: 'grid' | 'list') => void;
     resetAll: () => void;
     getBreadcrumbs: (id: number) => Category[];
     loadMore: () => void;
+    expandedId: number | null;
+    setExpanded: (id: number | null) => void;
 }
 
 export const FilterSearchContext = React.createContext<
@@ -45,10 +50,13 @@ export const FilterSearchProvider: React.FC<{
 
     const [isCategoryListOpen, setIsCategoryListOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [view, setView] = useState<'grid' | 'list'>('grid');
+    const [expandedId, setExpandedId] = useState<number | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 400);
     const isFirstRender = useRef(true);
     const isResetting = useRef(false);
+    const isNavigatingManually = useRef(false);
 
     // 2. HARD REFRESH RESET (Fixes the "URL won't clear" bug)
     useEffect(() => {
@@ -70,7 +78,9 @@ export const FilterSearchProvider: React.FC<{
     }, []);
 
     // 3. URL SYNC (Fixes the "Appends empty params" bug)
+    // 3. URL SYNC
     useEffect(() => {
+        // 1. Exit if it's the initial load or a reset
         if (isFirstRender.current || isResetting.current) {
             isFirstRender.current = false;
             return;
@@ -83,14 +93,40 @@ export const FilterSearchProvider: React.FC<{
         };
 
         const cleanParams = Object.entries(params).reduce((acc, [key, val]) => {
-            if (val !== null && val !== undefined && val !== '') acc[key] = val;
+            if (
+                val !== null &&
+                val !== undefined &&
+                val !== '' &&
+                val !== 'date-desc'
+            ) {
+                acc[key] = val;
+            }
             return acc;
         }, {} as any);
 
-        router.get(window.location.pathname, cleanParams, {
+        const currentPath = window.location.pathname;
+        const hasActiveFilters = Object.keys(cleanParams).length > 0;
+
+        // CHANGE: Identify your product listing path (e.g., '/')
+        const productListPath = '/';
+
+        // LOGIC:
+        // - If I have active filters, I should be on the product list page.
+        // - If I am on a subpage (like /pages/about) and I have NO filters, DO NOTHING.
+        if (!hasActiveFilters && currentPath !== productListPath) {
+            return;
+        }
+
+        // Determine destination
+        const destination = hasActiveFilters ? productListPath : currentPath;
+
+        router.get(destination, cleanParams, {
             preserveState: true,
             replace: true,
-            only: ['data', 'filters'],
+            // Only use 'only' if we aren't changing pages
+            ...(destination === currentPath
+                ? { only: ['data', 'filters'] }
+                : {}),
             onBefore: () => setIsProcessing(true),
             onFinish: () => setIsProcessing(false),
         });
@@ -169,8 +205,19 @@ export const FilterSearchProvider: React.FC<{
         return crumbs;
     };
 
+    const selectedCategory = useMemo(() => {
+        if (!selectedCategorySlug || flatCategories.length === 0) return null;
+        return (
+            flatCategories.find((c) => c.slug === selectedCategorySlug)?.name ??
+            null
+        );
+    }, [selectedCategorySlug, flatCategories]);
+
     const value: FilterSearchContextType = {
         categories: initialCategories ?? [],
+        expandedId,
+        setExpanded: setExpandedId,
+        selectedCategory,
         selectedCategorySlug,
         setSelectedSlug: setSelectedCategorySlug,
         searchTerm,
@@ -183,10 +230,28 @@ export const FilterSearchProvider: React.FC<{
         isCategoryListOpen,
         getBreadcrumbs,
         showCategoryList: setIsCategoryListOpen,
+        view,
+        changeView: setView,
         resetAll: () => {
+            // setSearchTerm('');
+            // setSelectedCategorySlug(null);
+            // setSortOrder('date-desc');
+            isNavigatingManually.current = true; // Lock the useEffect
             setSearchTerm('');
             setSelectedCategorySlug(null);
             setSortOrder('date-desc');
+            setExpandedId(null);
+
+            // Manually go where you want to go
+            router.get(
+                '/',
+                {},
+                {
+                    onFinish: () => {
+                        isNavigatingManually.current = false;
+                    },
+                },
+            );
         },
         loadMore: () => {
             const nextUrl = (props.data as any)?.links?.next;

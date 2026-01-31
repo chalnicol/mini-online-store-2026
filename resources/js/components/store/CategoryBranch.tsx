@@ -1,64 +1,79 @@
 import { useFilterSearch } from '@/context/FilterSearchContext';
 import type { Category } from '@/types/store';
-import gsap from 'gsap';
 import { ChevronDown } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 
-const CategoryBranch: React.FC<{ category: Category }> = ({ category }) => {
+const CategoryBranch: React.FC<{
+    category: Category;
+}> = ({ category }) => {
     const subContRef = useRef<HTMLDivElement>(null);
-    const { selectedCategorySlug, setSelectedSlug, activePath } =
+    const { selectedCategorySlug, setSelectedSlug, expandedId, setExpanded } =
         useFilterSearch();
 
     const isSelected = category.slug === selectedCategorySlug;
     const hasSub = category.children && category.children.length > 0;
 
-    // --- THE SECRET SAUCE ---
-    // We only want 'activePath' to open the tree on the INITIAL mount (refresh).
-    // After that, the user has full manual control via this local state.
-    const [isExpanded, setIsExpanded] = useState(() =>
-        activePath.includes(category.id),
-    );
+    // 1. Check if the current ID is the one the user clicked
+    const isDirectlyExpanded = expandedId === category.id;
 
-    // GSAP Animation
-    useEffect(() => {
-        if (!subContRef.current) return;
-        if (isExpanded) {
-            gsap.fromTo(
-                subContRef.current,
-                { height: 0, opacity: 0 },
-                {
-                    height: 'auto',
-                    opacity: 1,
-                    duration: 0.3,
-                    ease: 'power2.out',
-                },
+    // 2. RECURSIVE CHECK: Is the expandedId a descendant of this category?
+    const isParentOfExpanded = useMemo(() => {
+        if (!expandedId || !category.children) return false;
+
+        const checkChildren = (children: Category[]): boolean => {
+            return children.some(
+                (child) =>
+                    child.id === expandedId ||
+                    (child.children && checkChildren(child.children)),
             );
+        };
+
+        return checkChildren(category.children);
+    }, [expandedId, category.children]);
+
+    // 3. Final Expanded State
+    const isExpanded = isDirectlyExpanded || isParentOfExpanded;
+
+    const handleToggleExpandClick = () => {
+        if (isExpanded) {
+            // If we are a child, we should probably set the expandedId to our parent
+            // but for a simple accordion, setting to null or parent ID works.
+            setExpanded(category.parentId || null);
         } else {
-            gsap.to(subContRef.current, {
-                height: 0,
-                opacity: 0,
-                duration: 0.2,
-                ease: 'power2.in',
-            });
+            setExpanded(category.id);
         }
-    }, [isExpanded]);
+    };
+    const handleTextClick = () => {
+        if (isExpanded) {
+            // setIsExpanded(false);
+            setExpanded(null);
+        }
+        if (selectedCategorySlug === category.slug) {
+            setSelectedSlug(null);
+        } else {
+            setSelectedSlug(category.slug);
+        }
+    };
+
+    const contClass = () => {
+        if (isSelected) {
+            return 'border-gray-200 bg-sky-900 text-white';
+        } else if (isExpanded && !isSelected) {
+            return 'border-gray-400 bg-gray-200 text-gray-600';
+        }
+        return 'border-gray-400 bg-white text-gray-600';
+    };
 
     return (
         <div className="flex w-full flex-col">
             <div
-                className={`flex items-stretch rounded border transition-all ${
-                    isSelected
-                        ? 'border-sky-900 bg-sky-900 text-white'
-                        : 'border-gray-400 bg-white text-gray-900'
-                }`}
+                className={`flex items-stretch overflow-hidden rounded border ${contClass()}`}
             >
                 {/* 1. THE LINK: Changes products, does NOT toggle tree */}
                 <button
                     type="button"
-                    onClick={() =>
-                        setSelectedSlug(isSelected ? null : category.slug)
-                    }
-                    className="flex-1 px-3 py-1.5 text-left text-sm font-semibold hover:bg-black/5"
+                    onClick={handleTextClick}
+                    className="flex-1 rounded px-3 py-1.5 text-left text-sm font-semibold"
                 >
                     {category.name}
                 </button>
@@ -67,8 +82,8 @@ const CategoryBranch: React.FC<{ category: Category }> = ({ category }) => {
                 {hasSub && (
                     <button
                         type="button"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="flex w-10 flex-none items-center justify-center border-s border-inherit hover:bg-black/5"
+                        onClick={handleToggleExpandClick}
+                        className="flex w-10 flex-none cursor-pointer items-center justify-center border-s border-inherit hover:bg-black/10"
                     >
                         <ChevronDown
                             size={14}
@@ -78,23 +93,13 @@ const CategoryBranch: React.FC<{ category: Category }> = ({ category }) => {
                 )}
             </div>
 
-            {/* 3. THE CHILDREN */}
-            <div
-                ref={subContRef}
-                className="overflow-hidden"
-                style={{
-                    height: isExpanded ? 'auto' : 0,
-                    opacity: isExpanded ? 1 : 0,
-                }}
-            >
-                {hasSub && (
-                    <div className="ms-1 mt-2 space-y-2 border-s-3 border-sky-900 ps-2">
-                        {category.children.map((sub) => (
-                            <CategoryBranch key={sub.id} category={sub} />
-                        ))}
-                    </div>
-                )}
-            </div>
+            {isExpanded && hasSub && (
+                <div className="ms-1 mt-2 space-y-2 border-s-3 border-sky-900 ps-2">
+                    {category.children.map((sub) => (
+                        <CategoryBranch key={sub.id} category={sub} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

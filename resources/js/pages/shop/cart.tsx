@@ -11,7 +11,7 @@ const Cart = () => {
 
     return (
         <div className="mx-auto mt-4 w-full max-w-7xl px-4">
-            <TitleBar title="Cart" className="mb-4" animated={true} />
+            <TitleBar title="Cart" className="mb-4" />
 
             <div className="flex flex-col gap-6 md:flex-row">
                 <div className="flex-1">
