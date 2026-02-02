@@ -2,9 +2,7 @@ import { ADDRESS_TYPES, AddressDetailsType, formRules } from '@/data';
 import { type AddressDetails, type AddressPayload } from '@/types/store';
 
 import { useForm } from '@inertiajs/react';
-import gsap from 'gsap';
 import { Check, Circle } from 'lucide-react';
-import { useEffect, useRef } from 'react';
 import BaseModal from '../BaseModal';
 import CheckButton from '../CheckButton';
 import CustomButton from '../CustomButton';
@@ -35,25 +33,7 @@ const AddressModal: React.FC<AddressModalProps> = ({ data, onClose }) => {
         is_default: data?.isDefault || false,
     });
 
-    const contRef = useRef<HTMLDivElement>(null);
     const mode = data ? 'edit' : 'add';
-
-    useEffect(() => {
-        if (contRef.current) {
-            gsap.fromTo(
-                contRef.current,
-                { scale: 0 },
-                {
-                    scale: 1,
-                    duration: 0.8,
-                    ease: 'elastic.out(1, 0.5)',
-                },
-            );
-        }
-        return () => {
-            gsap.killTweensOf(contRef.current);
-        };
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,11 +75,8 @@ const AddressModal: React.FC<AddressModalProps> = ({ data, onClose }) => {
     };
 
     return (
-        <BaseModal>
-            <div
-                ref={contRef}
-                className="w-full max-w-lg overflow-hidden rounded bg-white px-4 py-3 shadow-lg"
-            >
+        <BaseModal size="lg">
+            <div className="overflow-hidden rounded bg-white px-4 py-3 shadow-lg">
                 <p className="font-bold text-gray-600">
                     {!data ? 'Add New Address' : 'Edit Address'}
                 </p>

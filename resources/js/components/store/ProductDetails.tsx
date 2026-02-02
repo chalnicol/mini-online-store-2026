@@ -1,212 +1,320 @@
-import type { Product } from "@/types";
-import { formatPrice } from "@/utils/PriceUtils";
-import { useState } from "react";
-import Rating from "./Rating";
+// import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/context/CartContext';
+import type { Product, ProductVariant } from '@/types/store';
+import { formatPrice } from '@/utils/PriceUtils';
+import { Link, router, usePage } from '@inertiajs/react';
+import { X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import BaseModal from './BaseModal';
+import CustomButton from './CustomButton';
+import FlexDetail from './FlexDetail';
+import PromptMessage from './PromptMessage';
+import QuantityForm from './QuantityForm';
+import Rating from './Rating';
 
 interface ProductDetailsProps {
-	product: Product;
+    product: Product;
 }
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
-	const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-	const [quantity, setQuantity] = useState<number>(1);
+    const { auth } = usePage<{ auth: any }>().props;
+    const { addToCart } = useCart();
 
-	// 1. Get unique options
-	const availableColors = [...new Set(product.variants.map((v) => v.color))];
-	const availableSizes = [...new Set(product.variants.map((v) => v.size))];
+    const variants = product.variants;
+    const isSingleVariant = variants.length === 1;
 
-	// 2. State management (assuming React)
-	const [selectedColor, setSelectedColor] = useState(availableColors[0]);
-	const [selectedSize, setSelectedSize] = useState(availableSizes[0]);
+    // --- State ---
+    const [quantity, setQuantity] = useState<number>(1);
 
-	// 3. Find the active variant
-	const activeVariant = product.variants.find(
-		(v) => v.color === selectedColor && v.size === selectedSize
-	);
+    // We'll track selected attributes as an object, e.g., { Size: 'L', Color: 'Blue' }
+    const [selectedAttributes, setSelectedAttributes] = useState<
+        Record<string, string>
+    >(variants[0]?.attributes || {});
 
-	const getDisplayName = () => {
-		if (!product) return "Loading...";
-		if (product.variants.length < 2) {
-			return `${product.name} (${product.variants[0]?.name})`;
-		}
-		return product.name;
-	};
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [isProcessing, setIsProcessing] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
-	const handleQuantityChange = (type: "increment" | "decrement") => {
-		setQuantity((prev) =>
-			type === "increment" ? prev + 1 : prev > 1 ? prev - 1 : 1
-		);
-	};
+    // --- Logic to extract unique attribute keys and values ---
+    // This finds all unique keys (e.g., ["Size", "Color"])
+    const attributeKeys = useMemo(() => {
+        if (!variants.length) return [];
+        return Object.keys(variants[0].attributes);
+    }, [variants]);
 
-	return (
-		<div className="flex flex-col md:flex-row mt-4 mb-6 gap-x-4 gap-y-4">
-			<div className="w-full md:max-w-xs lg:max-w-sm flex flex-col">
-				<div className="flex-1 w-full bg-gray-100 rounded overflow-hidden border border-gray-300">
-					<img
-						src={product.variants[selectedVariantIndex].image}
-						alt={product.variants[selectedVariantIndex].name}
-						className="w-full h-full object-contain max-w-sm object-contain m-auto"
-					/>
-				</div>
-				{/* variant images */}
-				{product.variants.length > 1 && (
-					<div className="flex gap-x-1.5 mt-2">
-						{product.variants.map((variant, i) => (
-							<button
-								key={variant.id}
-								className={`w-11 bg-gray-100 aspect-square border border-gray-300 shadow-sm hover:border-gray-400 cursor-pointer rounded overflow-hidden ${
-									i === selectedVariantIndex ? "border-sky-900" : ""
-								}`}
-								onClick={() => setSelectedVariantIndex(i)}
-							>
-								{variant.id}
-							</button>
-						))}
-					</div>
-				)}
-			</div>
-			<div className="flex-1 space-y-4">
-				<div>
-					<h2 className="font-semibold text-lg md:text-xl lg:text-2xl xl:text-3xl">
-						{/* {product.name} */}
-						{getDisplayName()}
-					</h2>
-					<p className="text-gray-600 font-medium">
-						{product.description}
-					</p>
-				</div>
-				<p className="text-2xl font-bold text-red-700">
-					{formatPrice(product.variants[selectedVariantIndex].price)}
-				</p>
-				<Rating rating={product.averageRating} numReviews={0} />
-				{/* variant selector */}
-				{/* {product.variants.length > 1 && (
-					<div className="flex flex-wrap gap-2">
-						<div className="flex-none w-24 text-sm">Select Variant: </div>
-						<div className="space-y-1.5 text-sm">
-							<div className="font-semibold text-gray-600">
-								{product.variants[selectedVariantIndex].name}
-							</div>
-							<div className="flex flex-wrap gap-1.5">
-								{product.variants.map((variant, i) => (
-									<button
-										key={variant.id}
-										className="border border-gray-300 shadow-sm w-11 aspect-square rounded cursor-pointer hover:border-gray-400 bg-gray-100"
-										onClick={() => setSelectedVariantIndex(i)}
-									>
-										<img
-											src={variant.image}
-											alt={variant.name}
-											className="w-full h-full object-contain"
-										/>
-									</button>
-								))}
-							</div>
-						</div>
-					</div>
-				)} */}
+    // Finds the current active variant based on ALL selected attributes
+    const activeVariant = useMemo(() => {
+        const found = variants.find((v) =>
+            Object.entries(selectedAttributes).every(
+                ([key, value]) => String(v.attributes[key]) === value,
+            ),
+        );
+        return found || variants[0];
+    }, [selectedAttributes, variants]);
 
-				{availableColors.length > 1 && (
-					<div className="flex flex-wrap gap-2">
-						<div className="flex-none w-24 text-sm">Select Color: </div>
-						<div className="flex flex-wrap gap-1.5">
-							{availableColors.map((color, i) => (
-								<button
-									key={i}
-									className={`border font-semibold text-sm px-2 rounded ${
-										selectedColor === color
-											? "bg-gray-100 border-sky-900"
-											: "border-gray-300 hover:border-sky-900 cursor-pointer shadow"
-									}`}
-									onClick={() => setSelectedColor(color)}
-								>
-									{color}
-								</button>
-							))}
-						</div>
-					</div>
-				)}
+    // --- Handlers ---
+    const handleAttributeChange = (key: string, value: string) => {
+        setSelectedAttributes((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    };
 
-				{availableSizes.length > 1 && (
-					<div className="flex flex-wrap gap-2">
-						<div className="flex-none w-24 text-sm">Select Size: </div>
+    const handleThumbnailClick = (variant: ProductVariant) => {
+        setSelectedAttributes(variant.attributes);
+    };
 
-						<div className="flex flex-wrap gap-1.5">
-							{availableSizes.map((size, i) => (
-								<button
-									key={i}
-									className={`border font-semibold text-sm px-2 rounded ${
-										selectedSize === size
-											? "bg-gray-100 border-sky-900"
-											: "border-gray-300 hover:border-sky-900 cursor-pointer shadow"
-									}`}
-									onClick={() => setSelectedSize(size)}
-								>
-									{size}
-								</button>
-							))}
-						</div>
-					</div>
-				)}
+    const handleAddToCart = () => {
+        if (auth.user) {
+            router.post(
+                '/cart',
+                {
+                    variant_id: activeVariant.id,
+                    quantity: quantity,
+                },
+                {
+                    preserveScroll: true,
+                    onBefore: () => {
+                        setError(null);
+                        setIsProcessing(true);
+                    },
+                    onFinish: () => {
+                        setIsProcessing(false);
+                        setShowSuccess(true);
+                    },
+                    onError: () => setError('Something went wrong!'),
+                },
+            );
+        } else {
+            addToCart(activeVariant, product, quantity);
+            setShowSuccess(true);
+        }
+    };
 
-				{activeVariant && (
-					<div className="flex flex-wrap gap-2">
-						<div className="flex-none w-24 text-sm">Active Variant</div>
-						<p className="text-sm font-bold text-gray-600 border border-gray-300 rounded shadow px-2">
-							{activeVariant.name}
-						</p>
-					</div>
-				)}
+    useEffect(() => {
+        setQuantity(1);
+    }, [activeVariant.id]);
 
-				{/* quantity set */}
-				<div className="flex flex-wrap gap-	2">
-					<div className="flex-none w-24 text-sm">Quantity: </div>
-					<div className="space-y-0.5">
-						<div className="flex">
-							<button
-								className="bg-gray-300 px-3 py-1 rounded-l hover:bg-gray-400 cursor-pointer"
-								onClick={() => handleQuantityChange("decrement")}
-							>
-								-
-							</button>
-							<input
-								type="text"
-								value={quantity}
-								className="w-16 text-center border-t border-b border-gray-400 focus:outline-none"
-								onChange={(e) => setQuantity(Number(e.target.value))}
-								min={1}
-								max={product.variants[selectedVariantIndex].stock}
-								disabled={
-									product.variants[selectedVariantIndex].stock === 0
-								}
-							/>
-							<button
-								className="bg-gray-300 px-3 py-1 rounded-r hover:bg-gray-400 cursor-pointer"
-								onClick={() => handleQuantityChange("increment")}
-							>
-								+
-							</button>
-						</div>
-						{product.variants[selectedVariantIndex].stock === 0 && (
-							<span className="text-sm text-rose-500">
-								The product is out-of-stock
-							</span>
-						)}
-					</div>
-				</div>
+    const displayImage =
+        activeVariant.imagePath ||
+        'https://placehold.co/600x400?text=No+Image+Available';
 
-				{/* buy now and add to cart buttons */}
-				<div className="flex gap-x-2">
-					<button className="bg-rose-500 font-bold text-white px-4 py-1 text-lg rounded hover:bg-rose-400 cursor-pointer flex-1 w-full md:flex-none md:w-1/3">
-						Buy Now
-					</button>
-					<button className="bg-sky-900 font-bold text-white px-4 py-1 text-lg rounded hover:bg-sky-800 cursor-pointer flex-1 w-full md:flex-none md:w-1/3">
-						Add to Cart
-					</button>
-				</div>
-			</div>
-		</div>
-	);
+    return (
+        <>
+            <div className="mt-4 mb-6 flex flex-col gap-x-4 gap-y-4 md:flex-row">
+                {/* Image Section */}
+                <div className="flex h-64 w-full flex-col md:h-auto md:max-w-xs lg:max-w-sm">
+                    <div className="w-full flex-1 overflow-hidden rounded border border-gray-300 bg-gray-100">
+                        <img
+                            key={activeVariant.id}
+                            src={displayImage}
+                            alt={activeVariant.name}
+                            className="h-full w-full animate-in object-contain duration-700 fade-in"
+                        />
+                    </div>
+                    {!isSingleVariant && (
+                        <div className="flex w-full gap-x-1.5 overflow-x-auto px-1 py-2">
+                            {variants.map((variant) => (
+                                <button
+                                    key={variant.id}
+                                    className={`aspect-square w-11 flex-none cursor-pointer overflow-hidden rounded border border-gray-300 bg-gray-100 shadow-sm hover:border-gray-400 ${
+                                        activeVariant.id === variant.id
+                                            ? 'border-sky-900 ring-1 ring-sky-900'
+                                            : ''
+                                    }`}
+                                    onClick={() =>
+                                        handleThumbnailClick(variant)
+                                    }
+                                >
+                                    <img
+                                        src={
+                                            variant.imagePath ||
+                                            'https://placehold.co/600x400?text=No+Image+Available'
+                                        }
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Details Section */}
+                <div className="flex-1 space-y-6">
+                    {error && <PromptMessage type="error" message={error} />}
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold md:text-xl lg:text-2xl xl:text-3xl">
+                            {product.name}
+                        </h2>
+                        <div className="flex items-baseline gap-x-3">
+                            <p className="text-2xl font-bold text-red-700">
+                                {formatPrice(activeVariant.calculatedPrice)}
+                            </p>
+                            {activeVariant.calculatedPrice <
+                                activeVariant.price && (
+                                <p className="font-semibold text-gray-400 line-through">
+                                    {formatPrice(activeVariant.price)}
+                                </p>
+                            )}
+                        </div>
+                        <Rating
+                            rating={product.averageRating}
+                            numReviews={product.reviewCount}
+                        />
+                    </div>
+
+                    <div className="space-y-3.5">
+                        {!isSingleVariant && (
+                            <>
+                                <FlexDetail label="Selected">
+                                    <p className="inline-block rounded border border-gray-400 px-2 text-sm font-bold text-gray-500 shadow">
+                                        {activeVariant.name}
+                                    </p>
+                                </FlexDetail>
+
+                                {/* DYNAMIC ATTRIBUTE SELECTORS */}
+                                {attributeKeys.map((key) => {
+                                    const options = Array.from(
+                                        new Set(
+                                            variants.map(
+                                                (v) => v.attributes[key],
+                                            ),
+                                        ),
+                                    );
+                                    return (
+                                        <FlexDetail
+                                            label={`Select ${key}`}
+                                            key={key}
+                                        >
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {options.map((value) => (
+                                                    <button
+                                                        key={value}
+                                                        className={`rounded border px-2 text-sm font-semibold transition ${
+                                                            selectedAttributes[
+                                                                key
+                                                            ] === value
+                                                                ? 'border-sky-900 bg-sky-50 text-sky-900'
+                                                                : 'cursor-pointer border-gray-300 shadow hover:border-sky-900'
+                                                        }`}
+                                                        onClick={() =>
+                                                            handleAttributeChange(
+                                                                key,
+                                                                value,
+                                                            )
+                                                        }
+                                                    >
+                                                        {value}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </FlexDetail>
+                                    );
+                                })}
+                            </>
+                        )}
+
+                        <FlexDetail label="Quantity">
+                            <div className="space-y-0.5">
+                                <QuantityForm
+                                    value={quantity}
+                                    max={activeVariant.stockQty}
+                                    disabled={activeVariant.stockQty === 0}
+                                    onChange={setQuantity}
+                                />
+                                {activeVariant.stockQty === 0 && (
+                                    <span className="text-sm text-rose-500">
+                                        Out of stock
+                                    </span>
+                                )}
+                            </div>
+                        </FlexDetail>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex w-full gap-x-2 md:w-2/3">
+                        <CustomButton
+                            label="Buy Now"
+                            color="danger"
+                            size="lg"
+                            className="flex-1 font-bold"
+                            disabled={
+                                activeVariant.stockQty === 0 || isProcessing
+                            }
+                            onClick={() => {
+                                /* logic */
+                            }}
+                        />
+                        <CustomButton
+                            label="Add to Cart"
+                            color="primary"
+                            size="lg"
+                            className="flex-1 font-bold"
+                            loading={isProcessing}
+                            onClick={handleAddToCart}
+                            disabled={
+                                activeVariant.stockQty === 0 || isProcessing
+                            }
+                        />
+                    </div>
+                </div>
+            </div>
+            {showSuccess && (
+                <BaseModal>
+                    <div className="mt-3 w-full max-w-md overflow-hidden rounded bg-white shadow-lg">
+                        <div className="relative px-4 py-3">
+                            {/* Close Button */}
+                            <button
+                                className="absolute top-2.5 right-3 aspect-square cursor-pointer rounded-full border border-gray-600 bg-gray-500 px-0.5 text-white shadow"
+                                onClick={() => setShowSuccess(false)}
+                            >
+                                <X size={12} />
+                            </button>
+
+                            <p className="font-semibold text-gray-600">
+                                Item added to cart successfully!
+                            </p>
+
+                            {/* Mini Summary (Optional, but nice to show what was added) */}
+                            <div className="mt-2 flex items-center gap-3 rounded bg-gray-50 p-2 text-sm">
+                                <img
+                                    src={
+                                        activeVariant.imagePath ||
+                                        'https://placehold.co/50x50'
+                                    }
+                                    className="h-10 w-10 rounded object-cover"
+                                />
+                                <div>
+                                    <p className="font-bold text-gray-700">
+                                        {product.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {activeVariant.name}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-col items-center gap-x-2 gap-y-1 md:flex-row">
+                                <Link
+                                    href="/cart"
+                                    className="block w-full flex-1 rounded border border-gray-300 bg-rose-500 px-3 py-2 text-center font-semibold text-white shadow hover:bg-rose-400"
+                                >
+                                    Go to Cart
+                                </Link>
+                                <Link
+                                    href="/"
+                                    className="block w-full flex-1 rounded border border-gray-300 bg-sky-900 px-3 py-2 text-center font-semibold text-white shadow hover:bg-sky-800"
+                                >
+                                    Shop More
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </BaseModal>
+            )}
+        </>
+    );
 };
 
 export default ProductDetails;

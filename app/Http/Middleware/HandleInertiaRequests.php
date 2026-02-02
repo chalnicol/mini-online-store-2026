@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Category;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\UserResource;
+use App\Models\CartItem;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -45,8 +46,10 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user() 
-                ? new UserResource($request->user()) 
-                : null,
+                    ? new UserResource(
+                        $request->user()->loadSum('cartItems', 'quantity')
+                    ) 
+                    : null,
             ],
             'categories' =>Cache::rememberForever('global_category_tree', function () {
                 $tree = Category::whereNull('parent_id')

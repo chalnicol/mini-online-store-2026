@@ -36,6 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at',
         'email_verification_token',
         'email_verification_token_expires_at',
+        'is_blocked',
     ];
 
     /**
@@ -61,6 +62,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'email_verification_token_expires_at' => 'datetime',
+            'is_blocked' => 'boolean',
+            
         ];
     }
 
@@ -112,5 +116,29 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return "{$this->fname} {$this->lname}";
     }
+
+    /**
+     * Get all of the cart items for the user.
+     */
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Accessor for cart_item_count.
+     * Usage: $user->cart_item_count
+     */
+    public function getCartItemCountAttribute(): int
+    {
+        // sum('quantity') gives you the total items (e.g., 2 shirts + 1 hat = 3)
+        // count() gives you total unique rows (e.g., 2 shirts + 1 hat = 2)
+        return (int) $this->cartItems()->sum('quantity');
+    }
+
+    /**
+     * Automatically include this in the JSON/Inertia response.
+     */
+    protected $appends = ['cart_item_count'];
 
 }

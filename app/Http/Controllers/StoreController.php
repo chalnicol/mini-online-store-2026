@@ -8,77 +8,135 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\ProductVariant;
 use App\Http\Resources\ProductResource;
-
+use Illuminate\Support\Facades\DB;
 
 class StoreController extends Controller
 {
     //
     public function index(Request $request)
     {
-        // Start the query with eager loading
-        $query = Product::with(['category', 'variants.discounts']);
+        $now = now()->toDateTimeString();
 
+        // 1. Base Query: Only get published products 
+        // and filter the variants to only include active ones
+        $query = Product::where('is_published', true)
+            ->with(['category', 'variants' => function($q) {
+                $q->where('is_active', true)->with('discounts');
+            }])
+            // Add these two lines
+            ->whereHas('variants', function($q) {
+                $q->where('is_active', true);
+            });
+
+        // Category Filter
         if ($request->filled('category')) {
-            // Eager load 'children' to make the recursion efficient
             $category = Category::with('children')->where('slug', $request->category)->firstOrFail();
-            
-            // 1. Get all nested IDs
-            // 2. Add the current category's ID to the list
             $categoryIds = collect($category->getAllDescendantIds())->push($category->id);
-            
-            // Filter products by this combined list of IDs
             $query->whereIn('category_id', $categoryIds);
         }
 
-        // 2. Multi-Field Search (Product Name or Variant SKU)
+        // Search Logic
         if ($request->filled('search')) {
             $search = $request->search;
-            
             $query->where(function($q) use ($search) {
-                // Search Product Name
                 $q->where('name', 'like', "%$search%")
-                
-                // Search Category Name
                 ->orWhereHas('category', function($catQuery) use ($search) {
                     $catQuery->where('name', 'like', "%$search%");
                 })
-                
-                // Search Variant Name or SKU
                 ->orWhereHas('variants', function($variantQuery) use ($search) {
-                    $variantQuery->where('name', 'like', "%$search%")
-                                ->orWhere('sku', 'like', "%$search%");
+                    $variantQuery->where('is_active', true) // Only search active variants
+                                ->where(function($sub) use ($search) {
+                                    $sub->where('name', 'like', "%$search%")
+                                        ->orWhere('sku', 'like', "%$search%");
+                                });
                 });
             });
         }
 
-        // 3. Sorting (A-Z, Price, Rating)
-        $sort = $request->get('sort', 'date-desc');
+        // Best Price Calculation (Respecting is_active)
+        // $bestPrices = DB::table('product_variants')
+        //     ->select('product_variants.product_id')
+        //     ->where('product_variants.is_active', true) // <--- CRUCIAL: Don't sort by paused variants
+        //     ->selectRaw("
+        //         MIN(CASE 
+        //             WHEN discounts.id IS NOT NULL 
+        //                 AND discounts.is_active = 1 
+        //                 AND discounts.start_date <= ? 
+        //                 AND discounts.end_date >= ? 
+        //             THEN 
+        //                 CASE 
+        //                     WHEN discounts.type = 'percentage' 
+        //                         THEN (product_variants.price - (product_variants.price * (discounts.value / 100.0)))
+        //                     WHEN discounts.type = 'fixed' 
+        //                         THEN (product_variants.price - discounts.value)
+        //                     ELSE product_variants.price
+        //                 END
+        //             ELSE product_variants.price
+        //         END) as final_price
+        //     ", [$now, $now])
+        //     ->leftJoin('discount_product_variant', 'product_variants.id', '=', 'discount_product_variant.product_variant_id')
+        //     ->leftJoin('discounts', 'discount_product_variant.discount_id', '=', 'discounts.id')
+        //     ->groupBy('product_variants.product_id');
+        $bestPrices = DB::table('product_variants')
+            ->select('product_variants.product_id')
+            ->leftJoin('discount_product_variant', 'product_variants.id', '=', 'discount_product_variant.product_variant_id')
+            ->leftJoin('discounts', function($join) use ($now) {
+                $join->on('discount_product_variant.discount_id', '=', 'discounts.id')
+                    ->where('discounts.is_active', true)
+                    ->where('discounts.start_date', '<=', $now)
+                    ->where('discounts.end_date', '>=', $now);
+            })
+            ->where('product_variants.is_active', true)
+            ->selectRaw("
+                MIN(CASE 
+                    WHEN discounts.id IS NOT NULL THEN 
+                        CASE 
+                            WHEN discounts.type = 'percentage' 
+                                THEN (product_variants.price - (product_variants.price * (discounts.value / 100.0)))
+                            WHEN discounts.type = 'fixed' 
+                                THEN (product_variants.price - discounts.value)
+                            ELSE product_variants.price
+                        END
+                    ELSE product_variants.price
+                END) as final_price
+            ", [])
+            ->groupBy('product_variants.product_id');
 
+        $query->select([
+            'products.*', 
+            'price_lookup.final_price' // Ensure the calculated price is also selected
+        ])
+        ->withCount('reviews') // Laravel adds 'reviews_count' automatically
+        ->leftJoinSub($bestPrices, 'price_lookup', function ($join) {
+            $join->on('products.id', '=', 'price_lookup.product_id');
+        });
+
+        // Sorting and Pagination
+        $sort = $request->get('sort', 'date-desc');
         $this->applySorting($query, $sort);
 
-        // 4. Final Pagination
         $perPage = $request->get('per_page', 20);
-        // return ProductResource::collection($query->paginate($perPage));
-        // return Inertia::render('shop/home', [
-        //     'data' => ProductResource::collection($query->paginate($perPage)),  
-        // ]);
+
         return Inertia::render('shop/home', [
             'data' => ProductResource::collection(
-                $query->paginate($perPage)->withQueryString() // Crucial for Load More!
+                $query->paginate($perPage)->withQueryString()
             ),
-            'filters' => $request->only(['search', 'category', 'sort']),
+            'filters' => (object) $request->only(['search', 'category', 'sort']),
         ]);
     }
 
     public function show($slug)
     {
-        $product = Product::with(['category', 'variants.discounts', 'reviews.user'])
+        $product = Product::with(['category', 'variants.discounts', 'reviews.user', 'reviews.variant'])
             ->where('slug', $slug)
             ->firstOrFail();
 
-        return new ProductResource($product);
-    }
+        // return new ProductResource($product);
+        return Inertia::render('shop/product-details', [
+            'product' => new ProductResource($product),
+        ]);
 
+    }
 
     /**
      * Extracted sorting logic to keep index() clean
@@ -87,14 +145,16 @@ class StoreController extends Controller
     {
         switch ($sort) {
             case 'price-asc':
-                $query->addSelect(['min_p' => ProductVariant::select('price')
-                    ->whereColumn('product_id', 'products.id')->orderBy('price', 'asc')->limit(1)
-                ])->orderBy('min_p', 'asc');
+                // $query->addSelect(['min_p' => ProductVariant::select('price')
+                //     ->whereColumn('product_id', 'products.id')->orderBy('price', 'asc')->limit(1)
+                // ])->orderBy('min_p', 'asc');
+                $query->orderBy('price_lookup.final_price', 'asc');
                 break;
             case 'price-desc':
-                $query->addSelect(['max_p' => ProductVariant::select('price')
-                    ->whereColumn('product_id', 'products.id')->orderBy('price', 'desc')->limit(1)
-                ])->orderBy('max_p', 'desc');
+                // $query->addSelect(['max_p' => ProductVariant::select('price')
+                //     ->whereColumn('product_id', 'products.id')->orderBy('price', 'desc')->limit(1)
+                // ])->orderBy('max_p', 'desc');
+                $query->orderBy('price_lookup.final_price', 'desc');
                 break;
             case 
                 'name-asc': $query->orderBy('name', 'asc'); 

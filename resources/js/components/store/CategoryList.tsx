@@ -56,16 +56,24 @@ const CategoryList: React.FC = () => {
                 </div>
             )} */}
 
-            <div className="sticky top-12 z-40 mb-2 bg-white py-2.5">
-                <div className="space-y-2.5 font-semibold text-gray-700">
-                    <p className="text-xs">
-                        Selected :
-                        <span className="ms-1">
-                            {selectedCategory || 'None'}
-                        </span>
+            <div className="sticky top-12 z-40 mb-2 space-y-1 bg-white py-2.5">
+                <p className="text-xs font-semibold tracking-wider">
+                    Selected:{' '}
+                </p>
+                <div className="flex gap-x-2 font-semibold text-gray-700">
+                    <p className="flex flex-1 items-center rounded border border-gray-400 bg-gray-50 px-2 text-sm">
+                        {selectedCategory || '- None -'}
                     </p>
-
-                    <div className="inset-0 flex gap-x-1.5">
+                    <CustomButton
+                        label="Reset"
+                        // size="sm"
+                        color="primary"
+                        onClick={resetAll}
+                        disabled={buttonDisabled}
+                        className="py-1"
+                    />
+                </div>
+                {/* <div className="inset-0 flex gap-x-1.5">
                         <input
                             type="search"
                             className="w-full rounded border border-gray-400 bg-white px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-sky-900"
@@ -83,8 +91,7 @@ const CategoryList: React.FC = () => {
                             disabled={buttonDisabled}
                             className="py-1"
                         />
-                    </div>
-                </div>
+                    </div> */}
             </div>
 
             <div className="space-y-1.5">
@@ -92,7 +99,7 @@ const CategoryList: React.FC = () => {
                     <CategoryBranch key={category.id} category={category} />
                 ))}
             </div>
-            <p className="py-2 text-center text-xs">- End of Category List -</p>
+            <p className="py-4 text-center text-xs">- End of Category List -</p>
         </div>
     );
 };

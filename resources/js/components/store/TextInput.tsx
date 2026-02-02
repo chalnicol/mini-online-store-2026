@@ -1,4 +1,5 @@
 import { useOutsideClick } from '@/hooks/user-outside-click';
+import { cn } from '@/lib/utils';
 import React from 'react';
 
 interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -27,7 +28,10 @@ const TextInput: React.FC<TextInputProps> = ({
             <div className="relative -mt-0.5">
                 <input
                     {...props}
-                    className={`autofill:text-fill-gray-900 z-10 h-full w-full rounded border border-gray-500 bg-white px-2 py-1 text-foreground focus:ring-1 focus:ring-sky-800 focus:outline-none ${className}`}
+                    className={cn(
+                        '`autofill:text-fill-gray-900 z-10 h-full w-full rounded border border-gray-500 bg-white px-2 py-1 text-foreground focus:ring-1 focus:ring-sky-800 focus:outline-none',
+                        className,
+                    )}
                 />
                 {rules && rules.length > 0 && (
                     <>

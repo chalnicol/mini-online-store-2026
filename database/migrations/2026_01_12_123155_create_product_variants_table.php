@@ -12,15 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('product_variants', function (Blueprint $table) {
-            $table->id();
+           $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->string('sku')->unique();
+            
+            // 1. The Human Readable Name (e.g., "Large / Blue / Leather")
             $table->string('name'); 
-            $table->string('size')->nullable();
-            $table->string('color')->nullable();
+
+            // 2. The Flexible Attribute Storage
+            // Stores: {"Size": "L", "Color": "Blue", "Material": "Leather"}
+            $table->json('attributes')->nullable(); 
+
             $table->decimal('price', 12, 2);
-            $table->string('image_path')->nullable(); // Single image per variant
+            $table->decimal('compare_at_price', 12, 2)->nullable();
+            
             $table->integer('stock_qty')->default(0);
+            $table->string('image_path')->nullable(); 
+            
+            $table->boolean('is_active')->default(true)->index();
             $table->timestamps();
         });
     }

@@ -15,18 +15,14 @@ const ProfileLayout: React.FC<ProfileLayoutProps> = ({ children }) => {
         { id: 4, href: '/profile/reviews', label: 'Reviews' },
     ];
 
-    // Logic lives here, not in state
-    // const isActive = (path: string) =>
-    //     url === path || url.startsWith(path + '/');
-
     return (
-        <div className="mx-auto mt-4 max-w-7xl px-4">
+        <>
             <TitleBar title="Profile" className="mb-3" />
             <div className="flex flex-col gap-x-4 gap-y-2 md:flex-row">
                 <FlexNav navItems={navItems} />
                 <div className="flex-1">{children}</div>
             </div>
-        </div>
+        </>
     );
 };
 export default ProfileLayout;

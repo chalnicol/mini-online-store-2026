@@ -73,7 +73,7 @@ const CategoryBranch: React.FC<{
                 <button
                     type="button"
                     onClick={handleTextClick}
-                    className="flex-1 rounded px-3 py-1.5 text-left text-sm font-semibold"
+                    className="flex-1 cursor-pointer rounded px-3 py-1.5 text-left text-sm font-semibold hover:bg-black/10"
                 >
                     {category.name}
                 </button>

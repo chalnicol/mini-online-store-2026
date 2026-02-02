@@ -8,10 +8,11 @@ export interface User {
     role: RoleType;
     mobileNumber?: string;
     addresses?: AddressDetails[];
-    is_verified: boolean;
-    is_blocked: boolean;
-    unread_notifications_count: number;
-    member_since: string;
+    isVerified: boolean;
+    isBlocked: boolean;
+    unreadNotificationsCount: number;
+    memberSince: string;
+    cartCount: number;
 }
 
 export type RoleType = 'ADMIN' | 'USER';
@@ -32,42 +33,62 @@ export interface Product {
     reviews: Review[];
     variants: ProductVariant[];
     averageRating: number;
+    reviewCount?: number;
     createdAt: string;
     updatedAt: string;
 }
 
 export interface ProductVariant {
     id: number;
-    name: string;
+    name: string; // The "Human Readable" label (e.g., "L / Blue")
     sku: string;
-    size?: string;
-    color?: string;
+
+    /** * Flexible attributes (e.g., { Size: "L", Color: "Blue", Material: "Cotton" })
+     * This replaces the hardcoded 'size' and 'color' fields.
+     */
+    attributes: Record<string, string>;
+
     price: number;
-    image?: string;
-    stock: number;
-    discounts: Discount[];
+    calculatedPrice: number;
+    compareAtPrice: number | null;
+
+    imagePath: string | null;
+    stockQty: number;
+    isActive: boolean;
+
     productId: number;
-    product: Product;
+    product?: Product; // Parent product info
+    discounts?: Discount[];
+    reviews?: Review[]; // If you're eager loading reviews
 }
 
 export interface CheckoutItem extends ProductVariant {
     quantity: number;
 }
 
-export interface CartItem extends ProductVariant {
+export interface CartItem {
+    id: number;
     quantity: number;
-    checked: boolean;
+    isChecked: boolean;
+    variant: ProductVariant;
+    product: {
+        id: number;
+        name: string;
+    };
 }
+
+export type DiscountType = 'fixed' | 'percentage';
 
 export interface Discount {
     id: number;
     code?: string;
     description?: string;
-    discountType: DiscountType;
+    type: DiscountType;
     value: number;
-    startDate: string;
+    startData: string;
     endDate: string;
-    variants: ProductVariant[];
+    isActive: boolean;
+    variants?: ProductVariant[];
 }
 
 export type NotificationType = 'verification' | 'order';
@@ -81,8 +102,6 @@ export interface Notification {
     date: string;
     type: NotificationType;
 }
-
-export type DiscountType = 'fixed' | 'percentage';
 
 export interface Category {
     id: number;
@@ -99,10 +118,19 @@ export interface Review {
     id: number;
     rating: number;
     comment?: string;
-    userId: number;
-    user: User;
-    productId: number;
-    product: Product;
+    user: {
+        name: string;
+        avatar?: string;
+    };
+    product: {
+        name: string;
+        slug: string;
+    };
+    variant: {
+        name: string;
+        sku: string;
+    };
+    relativeTime: string;
     createdAt: string;
     updatedAt: string;
     // ratingCount: number;
@@ -239,4 +267,10 @@ export interface PaginatedResponse<T> {
 }
 export interface ResourceResponse<T> {
     data: T;
+}
+
+interface SelectOptionsType<T> {
+    id: number;
+    label: string;
+    value: T;
 }

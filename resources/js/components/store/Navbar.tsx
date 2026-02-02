@@ -1,20 +1,24 @@
+import { useCart } from '@/context/CartContext';
 import { useFilterSearch } from '@/context/FilterSearchContext';
 import { useOutsideClick } from '@/hooks/user-outside-click';
+import { User as UserType } from '@/types/store';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import gsap from 'gsap';
-import { Bell, ChevronDown, Menu, ShoppingCart, User, X } from 'lucide-react';
+import { ChevronDown, Menu, User, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
+import NavLink from './NavLink';
 
 const Navbar: React.FC = () => {
+    const { post } = useForm();
+    const { resetAll } = useFilterSearch();
+    const { cartItems } = useCart();
     const { url, props } = usePage();
 
-    const { auth } = props as any;
+    const user = ((props.auth as any)?.user as UserType) || null;
 
-    const { post } = useForm();
+    const cartCount = user ? user.cartCount : cartItems.length;
 
-    const user = auth.user;
-
-    const { resetAll } = useFilterSearch();
+    // console.log('auth user', user);
 
     const [showHiddenMenu, setShowHiddenMenu] = useState<boolean>(false);
     const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
@@ -167,7 +171,7 @@ const Navbar: React.FC = () => {
 
     return (
         <nav className="flex h-14 border-b border-gray-300 bg-gray-100">
-            <div className="mx-auto flex w-full max-w-7xl items-center px-4 text-gray-600">
+            <div className="mx-auto flex w-full max-w-7xl items-center gap-x-6 px-4 text-gray-600">
                 <div className="navbar-brand">
                     <Link
                         href="/"
@@ -175,116 +179,149 @@ const Navbar: React.FC = () => {
                             e.preventDefault(); // Stop the default Inertia visit
                             resetAll(); // Use our custom reset logic
                         }}
-                        className="text-lg font-bold"
+                        className="rounded-lg border border-gray-400 bg-gray-100 px-3 text-lg font-bold shadow transition duration-300 hover:bg-gray-200"
                     >
                         Nicolas Online Store
                     </Link>
                 </div>
-
-                <ul className="ml-auto hidden flex-none items-center space-x-3 md:flex">
-                    {user ? (
-                        <>
-                            <li className="relative">
-                                <Link
-                                    href="/cart"
-                                    className={`flex aspect-square items-center justify-center gap-x-1 rounded-full border border-gray-400 px-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95`}
-                                >
-                                    <ShoppingCart size={18} />
-                                </Link>
-                                {/* <p className="absolute px-1 rounded-full font-bold top-0 -right-2 bg-rose-500 text-white text-xs">
-							10
-						</p> */}
-                            </li>
-                            <li className="relative">
-                                <Link
-                                    href="/profile/notifications"
-                                    only={['data']}
-                                    preserveState
-                                    className="flex aspect-square items-center justify-center gap-x-1 rounded-full border border-gray-400 px-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95"
-                                >
-                                    <Bell size={18} />
-                                </Link>
-                                {user.unread_notifications_count > 0 && (
-                                    <p className="absolute top-0 -right-2 rounded-full bg-rose-500 px-1 text-xs font-bold text-white">
-                                        {user.unread_notifications_count}
-                                    </p>
-                                )}
-                            </li>
-                            <li className="relative" ref={parentProfileMenuRef}>
-                                <button
-                                    className="flex cursor-pointer items-center justify-center gap-x-1 rounded-full border border-gray-400 py-2 ps-4 pe-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95"
-                                    onClick={handleProfileMenuClick}
-                                >
-                                    <span className="text-sm font-semibold tracking-wider text-gray-600 uppercase">
-                                        {user.fname}
-                                    </span>
-                                    {/* {showProfileMenu ? (
-                                        <ChevronUp size={18} />
-                                    ) : (
-                                        <ChevronDown size={18} />
-                                    )} */}
-                                    <ChevronDown
-                                        size={14}
-                                        className={`transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`}
-                                    />
-                                </button>
-                                {showProfileMenu && (
-                                    <div
-                                        ref={profileMenuRef}
-                                        className="absolute top-full right-0 z-50 mt-2 w-52 overflow-hidden rounded border border-gray-400 bg-white p-1.5 shadow-lg"
-                                    >
-                                        <div className="rounded bg-sky-900 px-2 py-1.5 text-sm font-semibold text-white">
-                                            <p>{fullName}</p>
-                                            <p className="text-xs">{email}</p>
-                                        </div>
-                                        <ul className="mt-1">
-                                            <li>
-                                                <Link
-                                                    href="/profile"
-                                                    className="block w-full p-1 hover:bg-gray-100"
-                                                    onClick={() =>
-                                                        setShowProfileMenu(
-                                                            false,
-                                                        )
-                                                    }
-                                                >
-                                                    Profile
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <button
-                                                    className="block w-full cursor-pointer border-t border-gray-300 p-1 text-left hover:bg-gray-100"
-                                                    onClick={handleLogout}
-                                                >
-                                                    Logout
-                                                </button>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                )}
-                            </li>
-                        </>
-                    ) : (
+                <div className="hidden flex-1 items-center md:flex">
+                    {/* <ul>
                         <li>
                             <Link
-                                href="/login"
-                                className="flex cursor-pointer items-center justify-center gap-x-1 rounded-lg border border-gray-400 bg-gray-100 px-3 py-1 text-gray-600 shadow transition duration-300 hover:bg-gray-200"
+                                href="/"
+                                className="rounded-full border border-gray-400 px-3 py-2 text-sm font-semibold uppercase shadow transition duration-300 hover:border-gray-500"
                             >
-                                <User size={18} />
-                                <span className="font-semibold">
-                                    Login/Register
-                                </span>
+                                Home
                             </Link>
                         </li>
-                    )}
-                </ul>
+                    </ul> */}
 
-                <button
-                    className="ml-auto cursor-pointer rounded border px-2 py-1.5 shadow hover:bg-gray-200 md:hidden"
-                    onClick={handleMenuClick}
-                >
-                    {showHiddenMenu ? <X size={18} /> : <Menu size={18} />}
-                </button>
+                    <ul className="ml-auto flex flex-none items-center space-x-3">
+                        <li>
+                            <NavLink
+                                type="circle"
+                                href="/cart"
+                                only={['products', 'subtotal']}
+                                preserveState
+                                showIndicatorCount={cartCount > 0}
+                                indicatorCount={cartCount}
+                                icon="ShoppingCart"
+                            />
+                        </li>
+
+                        {user ? (
+                            <>
+                                <li>
+                                    {/* <Link
+                                        href="/profile/notifications"
+                                        only={['data']}
+                                        preserveState
+                                        className="flex aspect-square items-center justify-center gap-x-1 rounded-full border border-gray-400 px-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95"
+                                    >
+                                        <Bell size={18} />
+                                    </Link>
+                                    {user.unread_notifications_count > 0 && (
+                                        <p className="absolute top-0 -right-2 rounded-full bg-rose-500 px-1 text-xs font-bold text-white">
+                                            {user.unread_notifications_count}
+                                        </p>
+                                    )} */}
+                                    <NavLink
+                                        type="circle"
+                                        href="/profile/notifications"
+                                        only={['data']}
+                                        preserveState
+                                        showIndicatorCount={
+                                            user.unreadNotificationsCount > 0
+                                        }
+                                        indicatorCount={
+                                            user.unreadNotificationsCount
+                                        }
+                                        icon="Bell"
+                                    />
+                                </li>
+                                <li
+                                    className="relative"
+                                    ref={parentProfileMenuRef}
+                                >
+                                    <button
+                                        className="flex cursor-pointer items-center justify-center gap-x-1 rounded-full border border-gray-400 py-2 ps-4 pe-2 shadow hover:border-gray-500 hover:bg-gray-50 active:scale-95"
+                                        onClick={handleProfileMenuClick}
+                                    >
+                                        <span className="text-sm font-semibold tracking-wider text-gray-600 uppercase">
+                                            {user.fname}
+                                        </span>
+                                        <ChevronDown
+                                            size={14}
+                                            className={`transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+                                    {showProfileMenu && (
+                                        <div
+                                            ref={profileMenuRef}
+                                            className="absolute top-full right-0 z-50 mt-2 w-52 overflow-hidden rounded border border-gray-400 bg-white p-1.5 shadow-lg"
+                                        >
+                                            <div className="rounded bg-sky-900 px-2 py-1.5 text-sm font-semibold text-white">
+                                                <p>{fullName}</p>
+                                                <p className="text-xs">
+                                                    {email}
+                                                </p>
+                                            </div>
+                                            <ul className="mt-1">
+                                                <li>
+                                                    <Link
+                                                        href="/profile"
+                                                        className="block w-full p-1 hover:bg-gray-100"
+                                                        onClick={() =>
+                                                            setShowProfileMenu(
+                                                                false,
+                                                            )
+                                                        }
+                                                    >
+                                                        Profile
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <button
+                                                        className="block w-full cursor-pointer border-t border-gray-300 p-1 text-left hover:bg-gray-100"
+                                                        onClick={handleLogout}
+                                                    >
+                                                        Logout
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    )}
+                                </li>
+                            </>
+                        ) : (
+                            <li>
+                                <Link
+                                    href="/login"
+                                    className="flex cursor-pointer items-center justify-center gap-x-1 rounded-lg border border-gray-400 bg-gray-100 px-3 py-1 text-gray-600 shadow transition duration-300 hover:bg-gray-200"
+                                >
+                                    <User size={18} />
+                                    <span className="font-semibold">
+                                        Login/Register
+                                    </span>
+                                </Link>
+                            </li>
+                        )}
+                    </ul>
+                </div>
+
+                <div className="relative ml-auto md:hidden">
+                    <button
+                        className="cursor-pointer rounded border border-gray-400 px-2 py-1.5 shadow hover:bg-gray-200"
+                        onClick={handleMenuClick}
+                    >
+                        {showHiddenMenu ? <X size={18} /> : <Menu size={18} />}
+                    </button>
+                    {((user && user.unreadNotificationsCount > 0) ||
+                        cartCount > 0) &&
+                        !showHiddenMenu && (
+                            <p className="transiton absolute -top-1 -right-1.5 aspect-square w-3 rounded-full bg-rose-500 duration-300"></p>
+                        )}
+                </div>
 
                 {showHiddenMenu && (
                     <div className="fixed bottom-0 left-0 z-20 h-[calc(100dvh-56px)] w-full text-white">
@@ -301,44 +338,35 @@ const Navbar: React.FC = () => {
                             }}
                             className="absolute top-0 right-0 h-full w-11/12 max-w-72 space-y-2 overflow-y-auto bg-white p-2 text-gray-600"
                         >
+                            <NavLink
+                                type="rect"
+                                href="/cart"
+                                only={['products', 'subtotal']}
+                                preserveState
+                                showIndicatorCount={cartCount > 0}
+                                indicatorCount={cartCount}
+                                onClick={() => closeMenuAnimation('hidden')}
+                                icon="ShoppingCart"
+                                label="Cart"
+                            />
+
                             {user ? (
                                 <>
-                                    <Link
-                                        href="/cart"
-                                        className="flex cursor-pointer items-center gap-x-2 rounded-lg border border-gray-400 px-3 py-2 text-gray-600 shadow transition duration-300 hover:bg-gray-200"
-                                        onClick={() =>
-                                            closeMenuAnimation('hidden')
-                                        }
-                                    >
-                                        <ShoppingCart size={20} />
-                                        <span className="font-semibold">
-                                            Cart
-                                        </span>
-
-                                        <span className="ms-auto rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">
-                                            16
-                                        </span>
-                                    </Link>
-                                    <Link
+                                    <NavLink
+                                        type="rect"
                                         href="/profile/notifications"
-                                        className="flex cursor-pointer items-center gap-x-2 rounded-lg border border-gray-400 px-3 py-2 text-gray-600 shadow transition duration-300 hover:bg-gray-200"
+                                        showIndicatorCount={
+                                            user.unreadNotificationsCount > 0
+                                        }
+                                        indicatorCount={
+                                            user.unreadNotificationsCount
+                                        }
                                         onClick={() =>
                                             closeMenuAnimation('hidden')
                                         }
-                                    >
-                                        <Bell size={20} />
-                                        <span className="font-semibold">
-                                            Notifications
-                                        </span>
-                                        {user.unread_notifications_count >
-                                            0 && (
-                                            <span className="ms-auto rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">
-                                                {
-                                                    user.unread_notifications_count
-                                                }
-                                            </span>
-                                        )}
-                                    </Link>
+                                        icon="Bell"
+                                        label="Notifications"
+                                    />
 
                                     <div className="rounded bg-sky-900 px-2.5 py-1.5 text-sm font-semibold text-white">
                                         <p>{fullName}</p>
@@ -367,15 +395,13 @@ const Navbar: React.FC = () => {
                                     </ul>
                                 </>
                             ) : (
-                                <Link
+                                <NavLink
+                                    type="rect"
                                     href="/login"
-                                    className="flex cursor-pointer items-center gap-x-1 rounded-lg border border-gray-400 px-3 py-2 text-gray-600 shadow transition duration-300 hover:bg-gray-200"
-                                >
-                                    <User size={20} />
-                                    <span className="font-semibold">
-                                        Login/Register
-                                    </span>
-                                </Link>
+                                    onClick={() => closeMenuAnimation('hidden')}
+                                    icon="User"
+                                    label="Login/Register"
+                                />
                             )}
                         </div>
                     </div>

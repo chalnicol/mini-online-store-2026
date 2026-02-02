@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->decimal('average_rating', 3, 1)->default(0.0); // e.g., 4.50
+            $table->boolean('is_published')->default(true)->index();
             $table->timestamps();
         });
     }

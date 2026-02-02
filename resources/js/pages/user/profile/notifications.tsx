@@ -183,8 +183,8 @@ const Notifications = ({ data }: NotificationsProps) => {
     }, [localNotifications]);
 
     return (
-        <div className="mx-auto max-w-7xl p-4">
-            <TitleBar title="Notifications" className="mb-3" animated={true} />
+        <>
+            <TitleBar title="Notifications" className="mb-3" />
 
             <div className="flex items-center space-x-2">
                 <CustomButton
@@ -286,7 +286,7 @@ const Notifications = ({ data }: NotificationsProps) => {
             >
                 Send Test Notification
             </Link> */}
-        </div>
+        </>
     );
 };
 

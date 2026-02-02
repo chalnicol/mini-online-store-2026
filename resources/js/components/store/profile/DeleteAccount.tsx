@@ -1,8 +1,7 @@
 // import { Link } from "react-router-dom";
 
 import { useForm } from '@inertiajs/react';
-import gsap from 'gsap';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import BaseModal from '../BaseModal';
 import CustomButton from '../CustomButton';
 import PromptMessage from '../PromptMessage';
@@ -28,6 +27,12 @@ const DeleteAccount: React.FC = () => {
         password: '', // This starts empty
     });
 
+    const handleDelete = () => {
+        reset();
+        clearErrors();
+        setShowConfirmation(true);
+    };
+
     const handleConfirmDelete = (e: React.FormEvent) => {
         e.preventDefault();
         setShowConfirmation(false);
@@ -35,25 +40,6 @@ const DeleteAccount: React.FC = () => {
     };
 
     const contRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (showConfirmation && contRef.current) {
-            reset();
-            clearErrors();
-            gsap.fromTo(
-                contRef.current,
-                { scale: 0 },
-                {
-                    scale: 1,
-                    duration: 0.8,
-                    ease: 'elastic.out(1, 0.5)',
-                },
-            );
-        }
-        return () => {
-            gsap.killTweensOf(contRef.current);
-        };
-    }, [showConfirmation]);
 
     return (
         <>
@@ -77,17 +63,14 @@ const DeleteAccount: React.FC = () => {
                     size="lg"
                     loading={processing}
                     disabled={processing}
-                    onClick={() => setShowConfirmation(true)}
+                    onClick={handleDelete}
                     className="mt-3"
                 />
             </div>
 
             {showConfirmation && (
-                <BaseModal>
-                    <div
-                        ref={contRef}
-                        className="w-full max-w-lg overflow-hidden rounded bg-white px-4 py-3 shadow-lg"
-                    >
+                <BaseModal size="lg">
+                    <div className="w-full overflow-hidden rounded bg-white px-4 py-3 shadow-lg">
                         <form
                             className="space-y-2"
                             onSubmit={handleConfirmDelete}
@@ -106,7 +89,7 @@ const DeleteAccount: React.FC = () => {
                                 required={true}
                             />
 
-                            <div className="mt-4 space-x-2">
+                            <div className="mt-4 flex items-center space-x-2">
                                 <CustomButton
                                     type="button"
                                     label="Cancel"

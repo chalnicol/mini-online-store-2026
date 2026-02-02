@@ -18,6 +18,15 @@ use App\Http\Controllers\CheckoutController;
 
 
 Route::get('/', [StoreController::class, 'index'])->name('home');
+
+//cart
+Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+Route::post('/cart/merge', [CartController::class, 'merge'])->name('cart.merge');
+// Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
+
+
 Route::get('products/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -57,8 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
      Route::delete('/profile/notifications/{id}', [NotificationController::class, 'destroy'])
         ->name('notifications.destroy');
 
-    //cart
-    Route::get('/cart', [CartController::class, 'index'])->name('cart');
+
 
     //checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');

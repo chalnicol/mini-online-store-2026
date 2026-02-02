@@ -14,9 +14,6 @@ interface AddressListProps {
 }
 
 const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
-    // const { user, isProcessing } = useAuth();
-    // console.log('addresses: ', addresses);
-
     const {
         data,
         delete: destroy,
@@ -40,7 +37,6 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
         if (success) {
             setSuccess(success);
         }
-        console.log('success: ', success);
         setToEdit(null);
         setShowForm(false);
     };
@@ -75,17 +71,6 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
             clearErrors();
         }
     }, [showForm, toDelete]);
-    //..
-    // if (loading) {
-    //     return (
-    //         <div className="flex items-center gap-x-2 overflow-hidden rounded-e border-s-4 border-sky-400 bg-sky-100 p-3 text-gray-600">
-    //             <Loader size={20} className="animate-spin text-sky-600" />
-    //             <p className="font-semibold text-sky-600">
-    //                 Loading Addresses...
-    //             </p>
-    //         </div>
-    //     );
-    // }
 
     return (
         <div className="relative">
@@ -107,11 +92,22 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
 
             {addresses.length > 0 ? (
                 <>
+                    <CustomButton
+                        color="primary"
+                        onClick={() => setShowForm(true)}
+                        className="mb-2"
+                        loading={processing}
+                    >
+                        <div className="flex items-center gap-x-1">
+                            <Plus size={16} />
+                            <span>New Address</span>
+                        </div>
+                    </CustomButton>
                     <div>
                         {addresses.map((address) => (
                             <div
                                 key={address.id}
-                                className="flex items-start gap-x-2.5 border-b border-gray-300 px-2 py-2.5 first:pt-0 odd:bg-gray-50"
+                                className="flex items-start gap-x-2.5 border-b border-gray-300 px-2 py-2.5 even:bg-gray-100"
                             >
                                 <div className="flex aspect-square w-20 flex-none flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-gray-300 bg-white shadow">
                                     <div className="flex flex-grow items-center justify-center">
@@ -167,22 +163,6 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
                             </div>
                         ))}
                     </div>
-
-                    <CustomButton
-                        color="primary"
-                        onClick={() => setShowForm(true)}
-                        className="mt-2"
-                        // loading={isProcessing}
-                    >
-                        <div className="flex items-center gap-x-1">
-                            <Plus size={12} />
-                            <span>New Address</span>
-                        </div>
-                    </CustomButton>
-                    {/* <button
-						className="bg-sky-900 hover:bg-sky-800 text-white px-2.5 py-1 rounded font-semibold cursor-pointer w-auto mt-2 flex items-center gap-x-0.5"
-						onClick={() => setShowForm(true)}
-					></button> */}
                 </>
             ) : (
                 <div className="mb-3 flex min-h-42 flex-col items-center justify-center gap-y-2 rounded border border-gray-300 bg-gray-100 shadow">

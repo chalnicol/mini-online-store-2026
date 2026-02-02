@@ -56,66 +56,62 @@ const Home = ({ data }: HomeProps) => {
     return (
         <>
             <Head title="Home" />
-            <div className="mx-auto max-w-7xl px-4">
-                {/* <TitleBar title="Home Page" className="my-3" /> */}
 
-                <div className="mt-3 flex h-22 items-center justify-center bg-gray-200">
+            {/* <div className="mt-3 flex h-22 items-center justify-center bg-gray-200">
                     <span className="text-4xl font-bold text-gray-400">
                         PROMO GOES HERE
                     </span>
-                </div>
+                </div> */}
 
-                <div className="mb-6">
-                    <SortAndView className="my-3" itemsCount={items.length} />
-                    {items.length > 0 ? (
-                        <>
-                            <div
-                                className={`flex-1 ${
-                                    view == 'grid'
-                                        ? 'grid gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5'
-                                        : 'flex flex-col gap-2'
-                                }`}
-                            >
-                                {items.map((product) => (
-                                    <ProductCard
-                                        key={product.id}
-                                        product={product || null}
-                                        view={view}
-                                    />
-                                ))}
-                            </div>
-
-                            <div
-                                ref={loadMoreRef}
-                                className="mt-3 flex h-20 items-center justify-center"
-                            >
-                                {isProcessing && (
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm text-gray-500">
-                                            Loading more products...
-                                        </span>
-                                    </div>
-                                )}
-
-                                {!hasMore && items.length > 0 && (
-                                    <p className="text-sm tracking-wider text-gray-500 uppercase">
-                                        -- You've reached the end of the
-                                        collection --.
-                                    </p>
-                                )}
-                            </div>
-                        </>
-                    ) : (
-                        <div className="my-3 flex min-h-42 flex-col items-center justify-center gap-y-1 rounded border border-gray-300 bg-gray-100 shadow">
-                            <p className="text-xl font-bold text-gray-500 lg:text-2xl">
-                                No products found.
-                            </p>
-                            <p className="text-sm text-gray-400 lg:text-base">
-                                Please refine your search and filter options.
-                            </p>
+            <div>
+                <SortAndView className="my-3" itemsCount={items.length} />
+                {items.length > 0 ? (
+                    <>
+                        <div
+                            className={`flex-1 ${
+                                view == 'grid'
+                                    ? 'grid gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5'
+                                    : 'flex flex-col gap-2'
+                            }`}
+                        >
+                            {items.map((product) => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product || null}
+                                    view={view}
+                                />
+                            ))}
                         </div>
-                    )}
-                </div>
+
+                        <div
+                            ref={loadMoreRef}
+                            className="flex h-20 items-center justify-center"
+                        >
+                            {isProcessing && (
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-500">
+                                        Loading more products...
+                                    </span>
+                                </div>
+                            )}
+
+                            {!hasMore && items.length > 0 && (
+                                <p className="text-sm font-semibold text-gray-500">
+                                    - You've reached the end of the collection -
+                                </p>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="my-3 flex min-h-42 flex-col items-center justify-center gap-y-1 rounded border border-gray-300 bg-gray-100 shadow">
+                        <p className="text-xl font-bold text-gray-500 lg:text-2xl">
+                            No products found.
+                        </p>
+                        <p className="text-sm text-gray-400 lg:text-base">
+                            Please refine your search and filter options.
+                        </p>
+                    </div>
+                )}
             </div>
         </>
     );

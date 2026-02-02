@@ -32,7 +32,8 @@ class ProductResource extends JsonResource
             
             'createdAt' => $this->created_at->format('Y-m-d'),
             'updatedAt' => $this->updated_at->format('Y-m-d'),
-            'averageRating' => $this->average_rating,
+            'averageRating' => (float) ($this->average_rating ?? 0),
+            'reviewCount' => (int) ($this->reviews_count ?? 0)
         ];
     }
 }

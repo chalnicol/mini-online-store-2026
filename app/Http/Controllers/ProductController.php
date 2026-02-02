@@ -65,7 +65,6 @@ class ProductController extends Controller
             'products' => ProductResource::collection($query->paginate($perPage)),  
         ]);
     }
-
     /**
      * Extracted sorting logic to keep index() clean
      */

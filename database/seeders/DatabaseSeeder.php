@@ -2,11 +2,8 @@
 
 namespace Database\Seeders;
 
-
-
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
 use App\Models\User;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -17,15 +14,11 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        
         $this->call([
-            RoleAndPermissionSeeder::class, // Roles FIRST
-            CategorySeeder::class, // Add this line
+            RoleAndPermissionSeeder::class, 
+            CategorySeeder::class, 
             UserProfileSeeder::class,
         ]);
         
@@ -33,30 +26,48 @@ class DatabaseSeeder extends Seeder
         $variantFactory = ProductVariant::factory();
 
         foreach ($products as $product) {
-            // 1. Generate the logical Variants (Name - Color/Size)
-            $variantFactory->createForProduct($product);
+            // Determine if this product should have only 1 variant (30% chance)
+            $isSingleVariant = rand(1, 10) <= 3;
 
-            // Now get one of those freshly created variants for the reviews
-            $variants = $product->variants;
+            if ($isSingleVariant) {
+                // Create exactly ONE variant
+                $variantFactory->create([
+                    'product_id' => $product->id,
+                    'name' => 'Standard',
+                    'attributes' => [], // Empty array instead of color/size
+                    'sku' => 'STD-' . strtoupper($product->id) . '-' . rand(1000, 9999),
+                ]);
+            } else {
+                // Create multiple logical variants via the factory's custom method
+                $variantFactory->createForProduct($product);
+            }
 
-            // 2. Add some random Reviews
+            // Refresh variants collection
+            $variants = $product->variants()->get();
+
+            // Add some random Reviews
             Review::factory(rand(1, 3))->create([
                 'product_id' => $product->id,
-                'product_variant_id' => $variants->random()->id, // Pass the variant here!
+                'product_variant_id' => $variants->random()->id,
                 'user_id' => rand(0, 1) 
                     ? User::where('email', 'john@example.com')->first()->id 
                     : User::factory()->create()->id,
             ]);
 
-            // 3. Occasionally add a Discount to one of the product's variants
+            // Occasionally add a Discount
             if (rand(1, 10) > 7) {
-                $discount = \App\Models\Discount::factory()->create();
+                $discount = Discount::factory()->create();
 
-                // Pick 1 or 2 random variants from this product to apply the discount to
-                $targetVariants = $variants->random(rand(1, min(2, $variants->count())));
+                // Pick random variants to apply discount
+                $countToSelect = rand(1, min(2, $variants->count()));
+                $targetVariants = $variants->random($countToSelect);
+
+                // Ensure we have a collection to loop over
+                $targetVariants = ($targetVariants instanceof ProductVariant) 
+                    ? collect([$targetVariants]) 
+                    : $targetVariants;
 
                 foreach ($targetVariants as $variant) {
-                    // This inserts into your 'discount_product_variant' table automatically
                     $variant->discounts()->attach($discount->id);
                 }
             }

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-// import { CartContext } from "../contexts/CartContext";
-import type { CartItem } from '@/types/store';
-import { Link, Trash } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { CartItem } from '@/types/store';
+import { Link } from '@inertiajs/react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import React from 'react';
 
 interface CartItemProps {
     item: CartItem;
@@ -9,118 +10,128 @@ interface CartItemProps {
 }
 
 const CartItemCard: React.FC<CartItemProps> = ({ item, className }) => {
-    // const cartContext = useContext(CartContext);
+    const { updateQuantity, removeFromCart, toggleCheck } = useCart();
 
-    // if (!cartContext) {
-    // 	return null;
-    // }
-
-    // const { removeFromCart, updateQuantity } = cartContext;
-
-    const { id, name, image, price, quantity, product, checked } = item;
-
-    const [newQuantity, setNewQuantity] = useState(quantity);
-
-    const updateQuantity = (type: 'increment' | 'decrement') => {
-        if (type == 'increment') {
-            setNewQuantity((prev) => prev + 1);
-        } else if (type == 'decrement') {
-            setNewQuantity((prev) => (prev > 1 ? prev - 1 : prev));
-        }
-    };
-
-    const handleSelectItem = (id: number) => {
-        console.log(id);
-    };
-
-    const itemName: string = product.variants.length > 1 ? product.name : name;
-    const variantName: string | null =
-        product.variants.length > 1 ? name : null;
-
-    // const productHasMultipleVariants = product.variants.length > 1;
+    const variant = item.variant;
+    const hasDiscount = variant.price > variant.calculatedPrice;
 
     return (
-        <div className={`p-2 ${className}`}>
-            <div className="flex items-start gap-2">
+        <div
+            className={`border-b py-2 last:border-0 ${className} ${!item.isChecked ? 'opacity-75' : ''}`}
+        >
+            <div className="flex items-start gap-3">
+                {/* 1. Checkbox */}
                 <input
                     type="checkbox"
-                    checked={checked}
-                    onChange={() => handleSelectItem(id)}
-                    className="aspect-square w-4"
+                    checked={item.isChecked}
+                    onChange={() => toggleCheck(item.id)}
+                    className="mt-2 aspect-square w-4 cursor-pointer rounded accent-rose-500"
                 />
-                <div className="grid flex-1 grid-cols-[1fr_1fr_max-content] items-center gap-x-4 gap-y-3 lg:grid-cols-[2fr_1fr_1fr_max-content]">
-                    {/* image & name */}
+
+                <div className="flex flex-1 flex-col gap-4 lg:grid lg:grid-cols-[2fr_1fr_1fr_max-content] lg:items-center">
+                    {/* 2. Image & Product Info (Always top/left) */}
                     <Link
-                        href="/products/1"
-                        className="col-span-3 flex gap-x-2 lg:col-span-1"
+                        href={`/products/${item.product.id}`}
+                        className="flex gap-x-2"
                     >
                         <img
-                            src={image}
-                            alt={name}
-                            className="aspect-square h-16"
+                            src={
+                                variant.imagePath ||
+                                'https://placehold.co/600x400?text=No+Image+Available'
+                            }
+                            alt={variant.name}
+                            className="aspect-square h-16 flex-shrink-0 rounded-md border object-cover"
                         />
-                        <div>
-                            <h3 className="font-bold">{itemName}</h3>
-                            {variantName && (
-                                <span className="text-sm font-semibold text-gray-500">
-                                    {variantName}
-                                </span>
-                            )}
+                        <div className="flex flex-col py-1">
+                            <h3 className="leading-tight font-bold text-gray-900">
+                                {item.product.name}
+                            </h3>
+                            <p className="text-sm font-medium text-gray-500">
+                                {variant.name}
+                            </p>
+                            {/* <div className="mt-1 flex flex-wrap gap-1">
+                                {Object.entries(variant.attributes || {}).map(
+                                    ([key, value]) => (
+                                        <span
+                                            key={key}
+                                            className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] tracking-wider text-gray-600 uppercase"
+                                        >
+                                            {value}
+                                        </span>
+                                    ),
+                                )}
+                            </div> */}
                         </div>
                     </Link>
 
-                    {/* price & remove button */}
-                    <div>
-                        <p className="text-xs">Price:</p>
-                        <p className="text-sm">
-                            ₱
-                            <span className="text-xl font-semibold">
-                                {price.toLocaleString()}
-                            </span>
-                        </p>
-                        {/* <button className="flex gap-x-1 items-center text-red-400 hover:text-red-600 cursor-pointer">
-							<Trash size={16} />
-							<span className="text-xs font-semibold">REMOVE</span>
-						</button> */}
-                    </div>
-
-                    {/* quantity */}
-                    <div className="space-y-0.5">
-                        <p className="text-xs">Quantity:</p>
-                        <div className="flex text-sm">
-                            <button
-                                className="cursor-pointer rounded-l bg-gray-300 px-3 py-1 hover:bg-gray-400"
-                                onClick={() => updateQuantity('decrement')}
-                            >
-                                -
-                            </button>
-                            <input
-                                type="text"
-                                value={newQuantity}
-                                onChange={(e) =>
-                                    setNewQuantity(Number(e.target.value))
-                                }
-                                className="w-12 border-t border-b border-gray-400 text-center focus:outline-none"
-                            />
-                            <button
-                                className="cursor-pointer rounded-r bg-gray-300 px-3 py-1 hover:bg-gray-400"
-                                onClick={() => updateQuantity('increment')}
-                            >
-                                +
-                            </button>
+                    {/* MOBILE ROW: Price, Qty, and Trash on one line together */}
+                    <div className="flex flex-row items-center justify-between gap-2 border-t pt-3 lg:contents lg:border-0 lg:pt-0">
+                        {/* 3. Price Display */}
+                        <div className="flex flex-col justify-center">
+                            <p className="hidden text-xs font-bold text-gray-400 uppercase lg:block">
+                                Price
+                            </p>
+                            <div className="flex flex-col gap-x-2 lg:flex-row lg:items-baseline">
+                                <span className="text-lg font-bold text-gray-900 lg:text-xl">
+                                    $
+                                    {Number(variant.calculatedPrice).toFixed(2)}
+                                </span>
+                                {hasDiscount && (
+                                    <span className="text-xs text-gray-400 line-through">
+                                        ${Number(variant.price).toFixed(2)}
+                                    </span>
+                                )}
+                            </div>
                         </div>
+
+                        {/* 4. Quantity Controls */}
+                        <div className="flex flex-col justify-center">
+                            <p className="mb-1 hidden text-xs font-bold text-gray-400 uppercase lg:block">
+                                Quantity
+                            </p>
+                            <div className="flex items-center">
+                                <button
+                                    type="button"
+                                    className="flex h-8 w-8 items-center justify-center rounded-l border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+                                    onClick={() =>
+                                        updateQuantity(
+                                            item.id,
+                                            item.quantity - 1,
+                                        )
+                                    }
+                                    disabled={item.quantity <= 1}
+                                >
+                                    <Minus size={14} />
+                                </button>
+                                <div className="flex h-8 w-8 items-center justify-center border-y border-gray-300 bg-white text-sm font-medium lg:w-10">
+                                    {item.quantity}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="flex h-8 w-8 items-center justify-center rounded-r border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+                                    onClick={() =>
+                                        updateQuantity(
+                                            item.id,
+                                            item.quantity + 1,
+                                        )
+                                    }
+                                    disabled={item.quantity >= variant.stockQty}
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 5. Remove Button */}
+                        <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-rose-50 hover:text-rose-500"
+                        >
+                            <Trash2 size={20} />
+                        </button>
                     </div>
-
-                    <button className="flex aspect-square w-7 cursor-pointer items-center justify-center rounded border bg-rose-400 text-white hover:bg-rose-300 hover:shadow-md">
-                        <Trash size={16} />
-                    </button>
+                    {/* End Mobile Row */}
                 </div>
-
-                {/* <div>
-				<button onClick={() => updateQuantity(id, quantity + 1)}>+</button>
-				<button onClick={() => updateQuantity(id, quantity - 1)}>-</button>
-				<button onClick={() => removeFromCart(id)}>Remove</button>
-			</div> */}
             </div>
         </div>
     );

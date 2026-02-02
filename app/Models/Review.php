@@ -30,13 +30,22 @@ class Review extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function variant (): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class);
+    }
+
     protected static function booted()
     {
         $updateRating = function ($review) {
             $product = $review->product;
-            // coalesce to 0.00 if no reviews exist
-            $product->average_rating = $product->reviews()->avg('rating') ?? 0.00;
-            $product->save();
+            if ($product) {
+                // Update the product's cached rating
+                $avg = $product->reviews()->avg('rating');
+                $product->update([
+                    'average_rating' => $avg ?? 0.00
+                ]);
+            }
         };
 
         static::created($updateRating);

@@ -1,5 +1,7 @@
+import CartMerger from '@/components/store/CartMerger';
 import FilterSearch from '@/components/store/FilterSearch';
 import Navbar from '@/components/store/Navbar';
+import { CartProvider } from '@/context/CartContext';
 import { FilterSearchProvider } from '@/context/FilterSearchContext';
 import { Category } from '@/types/store';
 import { usePage } from '@inertiajs/react';
@@ -17,19 +19,22 @@ const CustomLayout: React.FC<CustomLayoutProps> = ({
 
     return (
         <FilterSearchProvider initialCategories={categories}>
-            <div className="flex min-h-dvh flex-col bg-gray-50 text-gray-600">
-                <div className="sticky top-0 z-50 flex-none">
-                    <Navbar />
+            <CartProvider>
+                <CartMerger />
+                <div className="flex min-h-dvh flex-col bg-gray-50 text-gray-600">
+                    <div className="sticky top-0 z-50 flex-none">
+                        <Navbar />
+                    </div>
+                    <main className="relative flex-grow">
+                        {showFilterSearch == true && (
+                            <div className="mx-auto max-w-7xl px-4">
+                                <FilterSearch />
+                            </div>
+                        )}
+                        <div className="mx-auto max-w-7xl p-4">{children}</div>
+                    </main>
                 </div>
-                <main className="relative flex-grow">
-                    {showFilterSearch == true && (
-                        <div className="mx-auto max-w-7xl px-4">
-                            <FilterSearch />
-                        </div>
-                    )}
-                    {children}
-                </main>
-            </div>
+            </CartProvider>
         </FilterSearchProvider>
     );
 };

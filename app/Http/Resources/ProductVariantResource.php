@@ -17,17 +17,28 @@ class ProductVariantResource extends JsonResource
         // return parent::toArray($request);
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $this->name, // "L / Blue"
             'sku' => $this->sku,
-            'size' => $this->size,
-            'color' => $this->color,
-            'image' => $this->image_path,
             
-            'price' => number_format($this->price, 2),
-            'compare_at_price' => $this->compare_at_price,
-            'stock_qty' => $this->stock_qty,
+            // Replace hardcoded size/color with the JSON attributes array
+            'attributes' => $this->attributes, // Sends { "Size": "L", "Color": "Blue" }
+            
+            'imagePath' => $this->image_path,
+            
+            // Prices cast to float for JS math safety
+            'price' => (float) $this->price,
+            'calculatedPrice' => (float) $this->calculated_price, 
+            'compareAtPrice' => $this->compare_at_price ? (float) $this->compare_at_price : null,
+            
+            'stockQty' => (int) $this->stock_qty,
+            'isActive' => (bool) $this->is_active,
+
+            // Relations
             'discounts' => DiscountResource::collection($this->whenLoaded('discounts')),
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            
+            'productId' => $this->product_id,
+            'product' => new ProductResource($this->whenLoaded('product')),
         ];
     }
 }

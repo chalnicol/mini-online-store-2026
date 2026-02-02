@@ -14,57 +14,56 @@ class ProductVariantFactory extends Factory
         return [
             'sku' => strtoupper($this->faker->unique()->bothify('??-####-####')),
             'price' => $this->faker->randomFloat(2, 20, 500),
+            'compare_at_price' => $this->faker->optional(0.3)->randomFloat(2, 501, 700), // 30% chance of a "sale"
             'stock_qty' => $this->faker->numberBetween(0, 50),
             'product_id' => Product::factory(),
-            // 'name', 'size', 'color' will be overwritten by our "Generation" logic
+            'attributes' => [], // Default to empty array
+            'name' => 'Standard',
+            'is_active' => true,
         ];
     }
 
-    /**
-     * Create a realistic set of variants for a specific product.
-     */
     public function createForProduct(Product $product)
     {
-        // 1. Define possible attributes
         $sizes = ['S', 'M', 'L', 'XL'];
         $colors = ['Red', 'Blue', 'Black', 'White'];
+        $materials = ['Leather', 'Canvas', 'Cotton'];
 
-        // 2. Decide the "Style" of variations for THIS product
-        $type = $this->faker->randomElement(['size_only', 'color_only', 'both']);
+        // Randomly decide what attributes this product actually uses
+        $type = $this->faker->randomElement(['size_color', 'material_only', 'size_only']);
 
-        $variantsToCreate = [];
+        $combinations = [];
 
         if ($type === 'size_only') {
-            foreach ($this->faker->randomElements($sizes, rand(2, 4)) as $size) {
-                $variantsToCreate[] = ['size' => $size, 'color' => null];
+            foreach ($this->faker->randomElements($sizes, rand(2, 3)) as $s) {
+                $combinations[] = ['Size' => $s];
             }
-        } elseif ($type === 'color_only') {
-            foreach ($this->faker->randomElements($colors, rand(2, 4)) as $color) {
-                $variantsToCreate[] = ['size' => null, 'color' => $color];
+        } elseif ($type === 'material_only') {
+            foreach ($this->faker->randomElements($materials, rand(2, 3)) as $m) {
+                $combinations[] = ['Material' => $m];
             }
         } else {
-            // "Both" - create a few random combinations
-            $chosenSizes = $this->faker->randomElements($sizes, rand(2, 3));
-            $chosenColors = $this->faker->randomElements($colors, rand(2, 3));
-            
-            foreach ($chosenSizes as $size) {
-                foreach ($chosenColors as $color) {
-                    $variantsToCreate[] = ['size' => $size, 'color' => $color];
+            // Mix of Size and Color
+            $sList = $this->faker->randomElements($sizes, rand(2, 2));
+            $cList = $this->faker->randomElements($colors, rand(2, 2));
+            foreach ($sList as $s) {
+                foreach ($cList as $c) {
+                    $combinations[] = ['Size' => $s, 'Color' => $c];
                 }
             }
         }
 
-        // 3. Persist the variants
-        foreach ($variantsToCreate as $attributes) {
-            $variantName = $product->name;
-            if ($attributes['color']) $variantName .= " - " . $attributes['color'];
-            if ($attributes['size']) $variantName .= " (" . $attributes['size'] . ")";
+        foreach ($combinations as $attr) {
+            // Generate Name from the attribute values (e.g., "L / Blue")
+            $variantName = implode(' / ', array_values($attr));
 
-            $this->create(array_merge($attributes, [
+            $this->create([
                 'product_id' => $product->id,
                 'name' => $variantName,
-                'sku' => strtoupper(substr($product->name, 0, 2)) . $this->faker->unique()->bothify('-####-####'),
-            ]));
+                'attributes' => $attr, // This will be cast to JSON automatically
+                'sku' => strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $product->name), 0, 3)) 
+                         . $this->faker->unique()->bothify('-####-####'),
+            ]);
         }
     }
 }

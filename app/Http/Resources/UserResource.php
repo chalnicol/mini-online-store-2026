@@ -31,11 +31,13 @@ class UserResource extends JsonResource
             // This collection only appears if you Eager Load it in the Controller
             'addresses' => UserAddressResource::collection($this->whenLoaded('addresses')),
             'contacts' => UserContactResource::collection($this->whenLoaded('contacts')),
-            'member_since' => $this->created_at->format('M Y'),
-            'is_verified' => $this->hasVerifiedEmail(),
-            'is_blocked' => (bool) $this->isBlocked(),
-            
-            'unread_notifications_count' => $this->unreadNotifications()->count(),
+            'memberSsince' => $this->created_at->format('M Y'),
+            'isVerified' => $this->hasVerifiedEmail(),
+            'isBlocked' => (bool) $this->is_blocked,
+            //..
+            'unreadNotificationsCount' => (int) ($this->unread_notifications_count ?? 0),
+            'cartCount' => (int) ($this->cart_items_sum_quantity ?? 0),
+        
         ];
     }
 }

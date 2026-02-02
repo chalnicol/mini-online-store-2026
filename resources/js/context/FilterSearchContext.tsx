@@ -35,17 +35,18 @@ export const FilterSearchProvider: React.FC<{
     initialCategories: Category[];
 }> = ({ children, initialCategories }) => {
     const { props } = usePage();
-    const serverFilters = (props?.filters as any) ?? {};
 
-    // 1. State Initialization
+    // Safely extract filters with defaults
+    const serverFilters = (props?.filters as Record<string, string>) || {};
+
     const [searchTerm, setSearchTerm] = useState<string>(
-        () => serverFilters.search ?? '',
+        serverFilters.search || '',
     );
     const [selectedCategorySlug, setSelectedCategorySlug] = useState<
         string | null
-    >(() => serverFilters.category ?? null);
+    >(serverFilters.category || null);
     const [sortOrder, setSortOrder] = useState<string>(
-        () => serverFilters.sort ?? 'date-desc',
+        serverFilters.sort || 'date-desc',
     );
 
     const [isCategoryListOpen, setIsCategoryListOpen] = useState(false);
@@ -58,6 +59,24 @@ export const FilterSearchProvider: React.FC<{
     const isResetting = useRef(false);
     const isNavigatingManually = useRef(false);
 
+    useEffect(() => {
+        const params = (props?.filters as any) ?? {};
+
+        // Only update if the value actually changed to avoid infinite loops
+        if (params.search !== undefined && params.search !== searchTerm) {
+            setSearchTerm(params.search ?? '');
+        }
+        if (
+            params.category !== undefined &&
+            params.category !== selectedCategorySlug
+        ) {
+            setSelectedCategorySlug(params.category ?? null);
+        }
+        if (params.sort !== undefined && params.sort !== sortOrder) {
+            setSortOrder(params.sort ?? 'date-desc');
+        }
+    }, [props.filters]);
+
     // 2. HARD REFRESH RESET (Fixes the "URL won't clear" bug)
     useEffect(() => {
         const isReload = window.performance
@@ -69,19 +88,33 @@ export const FilterSearchProvider: React.FC<{
             setSearchTerm('');
             setSelectedCategorySlug(null);
             // Must use (url, data, options) signature
+
             router.get(
                 window.location.pathname,
                 {},
-                { replace: true, preserveState: false },
+                {
+                    replace: true,
+                    preserveState: false,
+                    onFinish: () => {
+                        isResetting.current = false;
+                    }, // Add this
+                },
             );
         }
     }, []);
 
-    // 3. URL SYNC (Fixes the "Appends empty params" bug)
     // 3. URL SYNC
     useEffect(() => {
         // 1. Exit if it's the initial load or a reset
-        if (isFirstRender.current || isResetting.current) {
+        // if (isFirstRender.current || isResetting.current) {
+        //     isFirstRender.current = false;
+        //     return;
+        // }
+        if (
+            isFirstRender.current ||
+            isResetting.current ||
+            isNavigatingManually.current
+        ) {
             isFirstRender.current = false;
             return;
         }
@@ -92,17 +125,19 @@ export const FilterSearchProvider: React.FC<{
             sort: sortOrder,
         };
 
-        const cleanParams = Object.entries(params).reduce((acc, [key, val]) => {
+        // Use Object.keys to be safer than Object.entries if you're worried about types
+        const cleanParams: Record<string, any> = {};
+        Object.keys(params).forEach((key) => {
+            const val = (params as any)[key];
             if (
                 val !== null &&
                 val !== undefined &&
                 val !== '' &&
                 val !== 'date-desc'
             ) {
-                acc[key] = val;
+                cleanParams[key] = val;
             }
-            return acc;
-        }, {} as any);
+        });
 
         const currentPath = window.location.pathname;
         const hasActiveFilters = Object.keys(cleanParams).length > 0;

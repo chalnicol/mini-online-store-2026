@@ -1,6 +1,8 @@
 import { useFilterSearch } from '@/context/FilterSearchContext';
+import { SelectOptionsType } from '@/types/store';
 import { Grid2X2, List, X } from 'lucide-react';
 import React from 'react';
+import CustomSelect from './CustomSelect';
 
 interface SortAndViewProps {
     className?: string;
@@ -20,17 +22,18 @@ const SortAndView: React.FC<SortAndViewProps> = ({
         setSelectedSlug,
         searchTerm,
         setSearched,
+        setExpanded,
     } = useFilterSearch();
 
-    const options: { value: string; label: string }[] = [
-        { value: 'name-asc', label: 'Name: A to Z' },
-        { value: 'name-desc', label: 'Name: Z to A' },
-        { value: 'price-asc', label: 'Price: Low to High' },
-        { value: 'price-desc', label: 'Price: High to Low' },
-        { value: 'rating-desc', label: 'Rating: High to Low' },
-        { value: 'rating-asc', label: 'Rating: Low to High' },
-        { value: 'date-desc', label: 'Newest' },
-        { value: 'date-asc', label: 'Oldest' },
+    const options: SelectOptionsType<string>[] = [
+        { id: 1, value: 'name-asc', label: 'Name: A to Z' },
+        { id: 2, value: 'name-desc', label: 'Name: Z to A' },
+        { id: 3, value: 'price-asc', label: 'Price: Low to High' },
+        { id: 4, value: 'price-desc', label: 'Price: High to Low' },
+        { id: 5, value: 'rating-desc', label: 'Rating: High to Low' },
+        { id: 6, value: 'rating-asc', label: 'Rating: Low to High' },
+        { id: 7, value: 'date-desc', label: 'Newest' },
+        { id: 8, value: 'date-asc', label: 'Oldest' },
     ];
     return (
         <div
@@ -39,7 +42,7 @@ const SortAndView: React.FC<SortAndViewProps> = ({
             {(searchTerm || selectedCategory) && (
                 <div className="flex flex-wrap gap-x-2 gap-y-1">
                     {searchTerm && (
-                        <div className="flex overflow-hidden rounded border bg-sky-900 text-white">
+                        <div className="flex overflow-hidden rounded border bg-sky-900 text-white shadow">
                             <p className="flex items-center px-2 py-1 font-semibold">
                                 Search: {searchTerm}
                             </p>
@@ -52,13 +55,16 @@ const SortAndView: React.FC<SortAndViewProps> = ({
                         </div>
                     )}
                     {selectedCategory && (
-                        <div className="flex overflow-hidden rounded border bg-sky-900 text-white">
+                        <div className="flex overflow-hidden rounded border bg-sky-900 text-white shadow">
                             <p className="flex items-center px-2 py-1 font-semibold">
                                 Category: {selectedCategory}
                             </p>
                             <button
                                 className="cursor-pointer border-s border-white px-1 hover:bg-sky-800"
-                                onClick={() => setSelectedSlug(null)}
+                                onClick={() => {
+                                    setSelectedSlug('');
+                                    setExpanded(null);
+                                }}
                             >
                                 <X size={14} />
                             </button>
@@ -69,47 +75,43 @@ const SortAndView: React.FC<SortAndViewProps> = ({
             {itemsCount > 0 && (
                 <div className="item-center flex flex-none gap-x-4">
                     <div className="flex items-center gap-x-1">
-                        <span>View :</span>
+                        <span className="font-semibold">View</span>
                         <div className="flex">
                             <button
-                                className={`text flex w-10 justify-center rounded-l border border-gray-400 p-1 ${
+                                className={`rounded-l border px-2.5 py-0.5 ${
                                     view === 'grid'
-                                        ? 'bg-sky-900 text-white'
-                                        : 'cursor-pointer shadow hover:bg-gray-100'
+                                        ? 'border-sky-800 bg-sky-900 text-white'
+                                        : 'cursor-pointer border-gray-400 shadow hover:bg-gray-100'
                                 }`}
                                 onClick={() => changeView('grid')}
                             >
-                                <Grid2X2 size={17} />
+                                <Grid2X2 size={20} />
                             </button>
                             <button
-                                className={`text flex w-10 justify-center rounded-r border border-s-0 border-gray-400 p-1 ${
+                                className={`justify-center rounded-r border border-s-0 px-2.5 py-0.5 ${
                                     view === 'list'
-                                        ? 'bg-sky-900 text-white'
-                                        : 'cursor-pointer shadow hover:bg-gray-100'
+                                        ? 'border-sky-800 bg-sky-900 text-white'
+                                        : 'cursor-pointer border-gray-400 shadow hover:bg-gray-100'
                                 }`}
                                 onClick={() => changeView('list')}
                             >
-                                <List size={17} className="" />
+                                <List size={20} className="" />
                             </button>
                         </div>
                     </div>
                     <div className="flex items-center gap-x-1">
-                        <span>Sort by:</span>
-                        <select
-                            className="rounded border border-gray-400 bg-white px-2 py-1 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                            value={
-                                typeof sortOrder === 'string'
-                                    ? sortOrder
-                                    : 'date-desc'
-                            }
-                            onChange={(e) => setSortOrder(e.target.value)}
-                        >
-                            {options.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+                        <span className="font-semibold">Sort by</span>
+                        <CustomSelect
+                            // value={
+                            //     typeof sortOrder === 'string'
+                            //         ? sortOrder
+                            //         : 'date-desc'
+                            // }
+                            value={sortOrder || 'date-desc'}
+                            size="sm"
+                            options={options}
+                            onChange={setSortOrder}
+                        />
                     </div>
                 </div>
             )}

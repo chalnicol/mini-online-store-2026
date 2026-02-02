@@ -16,7 +16,8 @@ class Product extends Model
         'name', 
         'slug', 
         'description', 
-        'average_rating'
+        'average_rating',
+        'is_published'
     ];
 
 

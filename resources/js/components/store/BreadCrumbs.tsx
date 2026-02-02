@@ -10,7 +10,7 @@ const BreadCrumbs: React.FC<BreadCrumbsProps> = ({ name, categoryId }) => {
     const { getBreadcrumbs } = useFilterSearch();
 
     const categoryChain = getBreadcrumbs(categoryId);
-    console.log(categoryChain);
+    // console.log(categoryChain);
     return (
         <div className="my-2 mt-3 flex flex-wrap items-center gap-x-2 rounded bg-gray-200 px-3 py-2.5 font-bold text-gray-500">
             <Link href="/" className="cursor-pointer text-sm hover:underline">
