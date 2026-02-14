@@ -43,10 +43,10 @@ const DeliveryTypeCard: React.FC<DeliveryTypeCardProps> = ({
 
     return (
         <div
-            className={`group relative flex flex-1 flex-col rounded border p-2 shadow ${
+            className={`group relative flex flex-1 flex-col rounded border border-gray-400 p-2 ${
                 t.type == deliveryType
-                    ? 'border-gray-400 bg-gray-100'
-                    : 'border-gray-300 bg-white'
+                    ? 'border-sky-900 bg-gray-50'
+                    : 'bg-white hover:border-sky-900 hover:shadow-sm'
             }`}
             // onClick={() => onChange(t.type)}
             // disabled={t.type == deliveryType}
@@ -60,11 +60,11 @@ const DeliveryTypeCard: React.FC<DeliveryTypeCardProps> = ({
                 <p className="absolute top-1 right-1">
                     {t.type == deliveryType ? (
                         <Circle
-                            size={16}
+                            size={12}
                             className="fill-current text-sky-900"
                         />
                     ) : (
-                        <Circle size={16} />
+                        <Circle size={12} />
                     )}
                 </p>
                 <div className="relative flex w-full flex-col items-start">

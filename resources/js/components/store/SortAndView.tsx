@@ -100,17 +100,13 @@ const SortAndView: React.FC<SortAndViewProps> = ({
                         </div>
                     </div>
                     <div className="flex items-center gap-x-1">
-                        <span className="font-semibold">Sort by</span>
+                        <p className="font-semibold">Sort by</p>
                         <CustomSelect
-                            // value={
-                            //     typeof sortOrder === 'string'
-                            //         ? sortOrder
-                            //         : 'date-desc'
-                            // }
                             value={sortOrder || 'date-desc'}
                             size="sm"
                             options={options}
                             onChange={setSortOrder}
+                            className="min-w-40"
                         />
                     </div>
                 </div>

@@ -20,6 +20,7 @@ class Product extends Model
         'is_published'
     ];
 
+    protected $appends = ['variants_count', 'reviews_count'];
 
     public function category(): BelongsTo
     {
@@ -35,4 +36,18 @@ class Product extends Model
     {
         return $this->hasMany(Review::class);
     }
+
+    //get variants count
+    public function getVariantsCountAttribute(): int
+    {
+        return (int) $this->variants()->count();
+    }
+    //get reviews count
+    public function getReviewsCountAttribute(): int
+    {
+        return (int) $this->reviews()->count();
+    }
+
+
+
 }

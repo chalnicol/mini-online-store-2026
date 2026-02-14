@@ -1,13 +1,22 @@
-import type { CartItem, Product, ProductVariant } from '@/types/store';
+import { Product, ProductVariant } from '@/types/store';
+import { router, usePage } from '@inertiajs/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface CartContextType {
-    cartItems: CartItem[];
-    addToCart: (variant: ProductVariant, product: any, qty: number) => void;
+    // cartItems: CartItem[];
+    count: number;
+    processing: boolean;
+    addToCart: (
+        variant: ProductVariant,
+        product: Product,
+        qty: number,
+        callback?: () => void,
+    ) => void;
+    updateQuantity: (id: number, quantity: number) => void;
     removeFromCart: (id: number) => void;
-    updateQuantity: (id: number, qty: number) => void;
-    toggleCheck: (id: number) => void;
-    clearCart: () => void;
+    toggleCheck: (id: number, isChecked: boolean) => void;
+    toggleAll: (isChecked: boolean) => void;
+    removeSelected: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -15,83 +24,116 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    // 1. Pull globally shared data from HandleInertiaRequests middleware
+    const [processing, setProcessing] = useState(false);
 
-    // Load from LocalStorage on mount
-    useEffect(() => {
-        const savedCart = localStorage.getItem('cart');
-        if (savedCart) setCartItems(JSON.parse(savedCart));
-    }, []);
+    const { cartCount } = usePage<any>().props;
+    const [count, setCount] = useState(0);
 
-    // Save to LocalStorage on change
     useEffect(() => {
-        localStorage.setItem('cart', JSON.stringify(cartItems));
-    }, [cartItems]);
+        // This updates your local Context state whenever the server props change
+        console.log('Inertia prop updated:', cartCount);
+        setCount(cartCount);
+    }, [cartCount]);
+
+    // --- Actions ---
 
     const addToCart = (
         variant: ProductVariant,
         product: Product,
         qty: number,
+        callback?: () => void,
     ) => {
-        setCartItems((prev) => {
-            const existing = prev.find((item) => item.id === variant.id);
-
-            if (existing) {
-                return prev.map((item) =>
-                    item.id === variant.id
-                        ? { ...item, quantity: item.quantity + qty }
-                        : item,
-                );
-            }
-
-            const newItem: CartItem = {
-                id: variant.id,
-                productId: product.id,
-                productName: product.name,
-                variantName: variant.name,
-                image: variant.image || '', // Still helpful for instant UI
+        setProcessing(true);
+        router.post(
+            '/cart',
+            {
+                variant_id: variant.id,
                 quantity: qty,
-                checked: true,
-            };
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessing(false),
+                onSuccess: () => {
+                    if (callback) callback();
+                },
+            },
+        );
+    };
 
-            return [...prev, newItem];
-        });
+    const updateQuantity = (id: number, quantity: number) => {
+        setProcessing(true);
+        // Matching Route::patch('/cart/{variant}')
+        router.patch(
+            `/cart/${id}`,
+            {
+                quantity: quantity,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessing(false),
+            },
+        );
     };
 
     const removeFromCart = (id: number) => {
-        setCartItems((prev) => prev.filter((item) => item.id !== id));
+        setProcessing(true);
+        // Matching Route::delete('/cart/{variant}')
+        router.delete(`/cart/${id}`, {
+            preserveScroll: true,
+            onFinish: () => setProcessing(false),
+        });
     };
 
-    const updateQuantity = (id: number, qty: number) => {
-        setCartItems((prev) =>
-            prev.map((item) =>
-                item.id === id ? { ...item, quantity: Math.max(1, qty) } : item,
-            ),
+    const toggleCheck = (id: number, isChecked: boolean) => {
+        setProcessing(true);
+        // Matching Route::patch('/cart/{id}/check')
+        router.patch(
+            `/cart/${id}/check`,
+            {
+                checked: isChecked,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessing(false),
+            },
         );
     };
 
-    const toggleCheck = (id: number) => {
-        setCartItems((prev) =>
-            prev.map((item) =>
-                item.id === id ? { ...item, checked: !item.checked } : item,
-            ),
+    const toggleAll = (isChecked: boolean) => {
+        setProcessing(true);
+        router.patch(
+            '/cart/check-all',
+            {
+                checked: isChecked, // This sends the 'checked' key to the controller
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessing(false),
+            },
         );
     };
 
-    const clearCart = () => {
-        setCartItems([]);
-        localStorage.removeItem('cart');
+    const removeSelected = () => {
+        setProcessing(true);
+        router.delete('/cart/remove-selected', {
+            preserveScroll: true,
+            preserveState: false, // Force state refresh to clear the UI
+            onFinish: () => setProcessing(false),
+        });
     };
 
     return (
         <CartContext.Provider
             value={{
-                clearCart,
-                cartItems,
+                count,
+                processing,
                 addToCart,
-                removeFromCart,
                 updateQuantity,
+                removeFromCart,
                 toggleCheck,
+                toggleAll,
+                removeSelected,
             }}
         >
             {children}

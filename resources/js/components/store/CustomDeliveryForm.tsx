@@ -1,9 +1,9 @@
 import type { CustomDeliveryTimeDetails } from '@/types/store';
 import { getTodayDateString } from '@/utils/DateUtils';
-import gsap from 'gsap';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import BaseModal from './BaseModal';
+import TextInput from './TextInput';
 
 interface CustomDeliveryFormModalProps {
     initialData: CustomDeliveryTimeDetails | null;
@@ -60,29 +60,9 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
         }));
     };
 
-    useEffect(() => {
-        if (contRef.current) {
-            gsap.fromTo(
-                contRef.current,
-                { scale: 0 },
-                {
-                    scale: 1,
-                    duration: 0.8,
-                    ease: 'elastic.out(1, 0.5)',
-                },
-            );
-        }
-        return () => {
-            gsap.killTweensOf(contRef.current);
-        };
-    }, []);
-
     return (
-        <BaseModal>
-            <div
-                ref={contRef}
-                className="w-full max-w-md overflow-hidden rounded bg-white shadow-md"
-            >
+        <BaseModal size="lg">
+            <div className="overflow-hidden rounded bg-white">
                 <p className="bg-sky-900 px-3 py-2 font-semibold text-white">
                     Custom Delivery Form
                 </p>
@@ -95,38 +75,26 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
                     </p>
                 </div>
 
-                <form className="p-3" onSubmit={handleSubmit}>
-                    <div>
-                        <p className="mb-1 text-sm font-semibold">Set Date</p>
-                        <input
-                            type="date"
-                            name="date"
-                            value={formData.date}
-                            min={today}
-                            onChange={handleFormChange}
-                            className="w-full rounded border px-2 py-1 focus:ring-1 focus:ring-sky-600 focus:outline-none"
-                            required
-                        />
-                    </div>
+                <form className="space-y-2 p-3" onSubmit={handleSubmit}>
+                    {/* <PromptMessage errors={formErrors} /> */}
 
-                    <div className="mt-2">
-                        <p className="mb-1 text-sm font-semibold">Set Time</p>
-                        <input
-                            type="time"
-                            name="time"
-                            min="10:00"
-                            max="18:00"
-                            value={formData.time}
-                            onChange={handleFormChange}
-                            className="w-full rounded border px-2 py-1 focus:ring-1 focus:ring-sky-600 focus:outline-none"
-                            required
-                        />
-                        {formErrors && formErrors.time && (
-                            <span className="mt-1 text-sm text-red-500">
-                                {formErrors.time}
-                            </span>
-                        )}
-                    </div>
+                    <TextInput
+                        label="Set Date"
+                        name="date"
+                        value={formData.date}
+                        min={today}
+                        onChange={handleFormChange}
+                        required
+                    />
+                    <TextInput
+                        label="Set Time"
+                        name="time"
+                        value={formData.time}
+                        min="10:00"
+                        max="18:00"
+                        onChange={handleFormChange}
+                        required
+                    />
 
                     <div className="mt-4 space-x-1">
                         <button

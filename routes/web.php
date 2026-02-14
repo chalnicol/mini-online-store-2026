@@ -19,13 +19,19 @@ use App\Http\Controllers\CheckoutController;
 
 Route::get('/', [StoreController::class, 'index'])->name('home');
 
-//cart
-Route::get('/cart', [CartController::class, 'index'])->name('cart');
-Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
-Route::post('/cart/merge', [CartController::class, 'merge'])->name('cart.merge');
-// Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
+// Shopping Cart Routes
+// 1. Static/Global Actions (Must be on top)
+Route::patch('/cart/check-all', [CartController::class, 'updateCheckAll'])->name('cart.update-check-all');
+Route::delete('/cart/remove-selected', [CartController::class, 'removeSelected'])->name('cart.remove-selected');
 
+// 2. General Cart Routes
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+
+// 3. ID-Specific Actions (Must be below static routes)
+Route::patch('/cart/{id}/check', [CartController::class, 'updateCheck'])->name('cart.update-check');
+Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
 
 Route::get('products/{slug}', [ProductController::class, 'show'])->name('product.show');
 

@@ -11,14 +11,18 @@ import NavLink from './NavLink';
 const Navbar: React.FC = () => {
     const { post } = useForm();
     const { resetAll } = useFilterSearch();
-    const { cartItems } = useCart();
-    const { url, props } = usePage();
 
-    const user = ((props.auth as any)?.user as UserType) || null;
+    const { auth } = usePage<{ auth: any }>().props;
 
-    const cartCount = user ? user.cartCount : cartItems.length;
+    // Use the globally shared count from your middleware.
+    // This works for BOTH guests and logged-in users.
+    // const cartCount = auth.cart_item_count || 0;
+
+    // If you still need the user object for the profile dropdown/name:
+    const user = auth.user as UserType | null;
 
     // console.log('auth user', user);
+    const { count: cartCount } = useCart();
 
     const [showHiddenMenu, setShowHiddenMenu] = useState<boolean>(false);
     const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);

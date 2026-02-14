@@ -2,14 +2,13 @@
 import { useCart } from '@/context/CartContext';
 import type { Product, ProductVariant } from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
-import { Link, router, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import BaseModal from './BaseModal';
 import CustomButton from './CustomButton';
 import FlexDetail from './FlexDetail';
-import PromptMessage from './PromptMessage';
-import QuantityForm from './QuantityForm';
+import QuantityControls from './QuantityControls';
 import Rating from './Rating';
 
 interface ProductDetailsProps {
@@ -18,7 +17,7 @@ interface ProductDetailsProps {
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
     const { auth } = usePage<{ auth: any }>().props;
-    const { addToCart } = useCart();
+    const { addToCart, processing } = useCart();
 
     const variants = product.variants;
     const isSingleVariant = variants.length === 1;
@@ -32,8 +31,6 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
     >(variants[0]?.attributes || {});
 
     const [showSuccess, setShowSuccess] = useState(false);
-    const [isProcessing, setIsProcessing] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
 
     // --- Logic to extract unique attribute keys and values ---
     // This finds all unique keys (e.g., ["Size", "Color"])
@@ -64,31 +61,10 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
         setSelectedAttributes(variant.attributes);
     };
 
-    const handleAddToCart = () => {
-        if (auth.user) {
-            router.post(
-                '/cart',
-                {
-                    variant_id: activeVariant.id,
-                    quantity: quantity,
-                },
-                {
-                    preserveScroll: true,
-                    onBefore: () => {
-                        setError(null);
-                        setIsProcessing(true);
-                    },
-                    onFinish: () => {
-                        setIsProcessing(false);
-                        setShowSuccess(true);
-                    },
-                    onError: () => setError('Something went wrong!'),
-                },
-            );
-        } else {
-            addToCart(activeVariant, product, quantity);
+    const handleAddToCart = async () => {
+        addToCart(activeVariant, product, quantity, () => {
             setShowSuccess(true);
-        }
+        });
     };
 
     useEffect(() => {
@@ -98,6 +74,18 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
     const displayImage =
         activeVariant.imagePath ||
         'https://placehold.co/600x400?text=No+Image+Available';
+
+    // Find if this variant is already in the cart
+    // const itemInCart = cartItems.find(
+    //     (item) => item.variant.id === activeVariant.id,
+    // );
+    // const qtyInCart = itemInCart ? itemInCart.quantity : 0;
+
+    // // Calculate remaining available stock
+    // const availableToBuy = activeVariant.stockQty - qtyInCart;
+
+    // // Disable button if no more can be added
+    // const isMaxedOut = qtyInCart >= activeVariant.stockQty;
 
     return (
         <>
@@ -142,7 +130,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
                 {/* Details Section */}
                 <div className="flex-1 space-y-6">
-                    {error && <PromptMessage type="error" message={error} />}
+                    {/* {error && <PromptMessage type="error" message={error} />} */}
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold md:text-xl lg:text-2xl xl:text-3xl">
                             {product.name}
@@ -217,15 +205,19 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
                         <FlexDetail label="Quantity">
                             <div className="space-y-0.5">
-                                <QuantityForm
+                                <QuantityControls
                                     value={quantity}
                                     max={activeVariant.stockQty}
                                     disabled={activeVariant.stockQty === 0}
                                     onChange={setQuantity}
                                 />
-                                {activeVariant.stockQty === 0 && (
+                                {activeVariant.stockQty === 0 ? (
                                     <span className="text-sm text-rose-500">
                                         Out of stock
+                                    </span>
+                                ) : (
+                                    <span className="text-sm text-sky-900">
+                                        {activeVariant.stockQty} available
                                     </span>
                                 )}
                             </div>
@@ -240,7 +232,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                             size="lg"
                             className="flex-1 font-bold"
                             disabled={
-                                activeVariant.stockQty === 0 || isProcessing
+                                activeVariant.stockQty === 0 || processing
                             }
                             onClick={() => {
                                 /* logic */
@@ -251,10 +243,10 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                             color="primary"
                             size="lg"
                             className="flex-1 font-bold"
-                            loading={isProcessing}
+                            loading={processing}
                             onClick={handleAddToCart}
                             disabled={
-                                activeVariant.stockQty === 0 || isProcessing
+                                activeVariant.stockQty === 0 || processing
                             }
                         />
                     </div>

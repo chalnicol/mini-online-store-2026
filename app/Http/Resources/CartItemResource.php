@@ -20,10 +20,6 @@ class CartItemResource extends JsonResource
             // Reuse your existing variant resource for consistency!
             'variant' => new ProductVariantResource($this),
             'isChecked' => (bool) ($this->is_checked ?? true), // camelCase
-            'product' => [
-                'id' => $this->product->id,
-                'name' => $this->product->name,
-            ],
         ];
     }
 }

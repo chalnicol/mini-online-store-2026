@@ -33,7 +33,8 @@ export interface Product {
     reviews: Review[];
     variants: ProductVariant[];
     averageRating: number;
-    reviewCount?: number;
+    // reviewsCount?: number;
+    variantsCount: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -71,10 +72,11 @@ export interface CartItem {
     quantity: number;
     isChecked: boolean;
     variant: ProductVariant;
-    product: {
-        id: number;
-        name: string;
-    };
+    // product: {
+    //     id: number;
+    //     name: string;
+    //     slug: string;
+    // };
 }
 
 export type DiscountType = 'fixed' | 'percentage';

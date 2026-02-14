@@ -3,71 +3,230 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartItem;
-use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-
 use App\Http\Resources\CartItemResource;
-
 
 class CartController extends Controller
 {
     /**
      * Display the cart page.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $products = collect();
+        $this->validateCartStock();
 
-        if (Auth::check()) {
-            // This returns a collection of ProductVariant models with cart_quantity injected
-            $products = $this->getCartFromDb();
-        } elseif ($request->has('guestCart')) {
-            // This also returns a collection of ProductVariant models with cart_quantity injected
-            $products = $this->getCartFromLocalStorageData($request->input('guestCart'));
-        }
+        $allProducts = Auth::check() 
+            ? $this->getCartFromDb() 
+            : $this->getCartFromSession();
 
-        // Calculate subtotal ONLY for checked items
-        $subtotal = $products->filter(function ($variant) {
-                // Check the 'checked' status we injected in getCartFromDb/LocalStorage
-                return $variant->is_checked === true;
-            })->sum(function ($variant) {
-                return $variant->calculated_price * $variant->cart_quantity;
-            });
+        // Split into two lists
+        $available = $allProducts->filter(fn($v) => $v->stock_qty > 0);
+        $unavailable = $allProducts->filter(fn($v) => $v->stock_qty <= 0);
+
+        $subtotal = $available->filter(fn($v) => $v->is_checked)
+            ->sum(fn($v) => $v->calculated_price * $v->cart_quantity);
 
         return Inertia::render('shop/cart', [
-            // Use the resource to get camelCase and the nested 'variant' structure
-            'products' => CartItemResource::collection($products),
+            'products' => CartItemResource::collection($available),
+            'unavailableProducts' => CartItemResource::collection($unavailable),
             'subtotal' => (float) $subtotal,
         ]);
     }
 
     /**
-     * Helper to fetch products for Guest data
-     * $data looks like: [['id' => 1, 'qty' => 2], ['id' => 5, 'qty' => 1]]
+     * Add or update an item.
      */
-    private function getCartFromLocalStorageData(array $data)
+    public function store(Request $request)
     {
-        $items = collect($data);
-        $variantIds = $items->pluck('id');
+        $request->validate([
+            'variant_id' => 'required|exists:product_variants,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
 
-        return ProductVariant::whereIn('id', $variantIds)
-            ->with(['product', 'discounts'])
-            ->get()
-            ->map(function ($variant) use ($items) {
-                // Find the qty from the request data and attach it to the variant
-                $localItem = $items->firstWhere('id', $variant->id);
-                $variant->cart_quantity = $localItem['qty'] ?? 1;
-                $variant->is_checked = $localItem['checked'] ?? true;
-                return $variant;
-            });
+        $variant = ProductVariant::findOrFail($request->variant_id);
+        $requestedQty = $request->integer('quantity');
+
+        if (Auth::check()) {
+            $item = CartItem::firstOrNew([
+                'user_id' => Auth::id(),
+                'product_variant_id' => $variant->id
+            ]);
+
+            $currentQty = $item->exists ? $item->quantity : 0;
+            // Use stock_qty from your migration
+            $item->quantity = min($currentQty + $requestedQty, $variant->stock_qty);
+            $item->checked = true;
+            $item->save();
+        } else {
+            $cart = session()->get('cart', []);
+            $id = $request->variant_id;
+
+            $currentQty = isset($cart[$id]) ? $cart[$id]['quantity'] : 0;
+            $newQty = min($currentQty + $requestedQty, $variant->stock_qty);
+
+            $cart[$id] = [
+                'id' => $id,
+                'quantity' => $newQty,
+                'checked' => true
+            ];
+            session()->put('cart', $cart);
+        }
+
+        return back();
     }
 
     /**
-     * Helper to fetch products for Logged In user
+     * Update quantity or checked status.
      */
+    public function update(Request $request, $variantId)
+    {
+        $data = $request->validate([
+            'quantity' => 'sometimes|integer|min:1',
+            'checked'  => 'sometimes|boolean'
+        ]);
+
+        $variant = ProductVariant::findOrFail($variantId);
+
+        if (Auth::check()) {
+            $item = CartItem::where('user_id', Auth::id())
+                ->where('product_variant_id', $variantId)
+                ->first();
+
+            if ($item) {
+                if (isset($data['quantity'])) {
+                    $item->quantity = min($data['quantity'], $variant->stock_qty);
+                }
+                if (isset($data['checked'])) {
+                    $item->checked = $data['checked'];
+                }
+                $item->save();
+            }
+        } else {
+            $cart = session()->get('cart', []);
+            if (isset($cart[$variantId])) {
+                if (isset($data['quantity'])) {
+                    $cart[$variantId]['quantity'] = min($data['quantity'], $variant->stock_qty);
+                }
+                if (isset($data['checked'])) {
+                    $cart[$variantId]['checked'] = $data['checked'];
+                }
+                session()->put('cart', $cart);
+            }
+        }
+
+        return back();
+    }
+
+    public function updateCheck(Request $request, $id)
+    {
+        $checked = $request->boolean('checked');
+
+        if (Auth::check()) {
+            CartItem::where('user_id', Auth::id())
+                ->where('product_variant_id', $id)
+                ->update(['checked' => $checked]);
+        } else {
+            $cart = session()->get('cart', []);
+            if (isset($cart[$id])) {
+                $cart[$id]['checked'] = $checked;
+                session()->put('cart', $cart);
+            }
+        }
+        return back();
+    }
+
+    public function updateCheckAll(Request $request)
+    {
+        $checked = $request->boolean('checked'); 
+
+        if (Auth::check()) {
+            Auth::user()->cartItems()->update(['checked' => $checked]);
+        } else {
+            $cart = collect(session()->get('cart', []))->map(function ($item) use ($checked) {
+                $item['checked'] = $checked;
+                return $item;
+            })->toArray();
+            session()->put('cart', $cart);
+        }
+
+        return back();
+    }
+
+    public function destroy($variantId)
+    {
+        if (Auth::check()) {
+            CartItem::where('user_id', Auth::id())
+                ->where('product_variant_id', $variantId)
+                ->delete();
+        } else {
+            $cart = session()->get('cart', []);
+            unset($cart[$variantId]);
+            session()->put('cart', $cart);
+        }
+
+        return back();
+    }
+
+    public function removeSelected()
+    {
+        if (Auth::check()) {
+            // Only delete items that are checked AND have stock > 0
+            Auth::user()->cartItems()
+                ->where('checked', true)
+                ->whereHas('variant', function ($query) {
+                    $query->where('stock_qty', '>', 0);
+                })
+                ->delete();
+        } else {
+            $cart = collect(session()->get('cart', []))
+                ->filter(function ($item) {
+                    $variant = \App\Models\ProductVariant::find($item['id']);
+                    
+                    // Keep the item if:
+                    // 1. It's NOT checked OR 
+                    // 2. It's checked but has 0 stock (meaning it's in the unavailable list)
+                    $is_checked = $item['checked'] ?? true;
+                    $has_stock = $variant && $variant->stock_qty > 0;
+
+                    return !($is_checked && $has_stock);
+                })
+                ->toArray();
+                
+            session()->put('cart', $cart);
+        }
+
+        return back();
+    }
+
+    public function clearUnavailable()
+    {
+        if (Auth::check()) {
+            // Delete cart items where the associated variant has 0 stock
+            CartItem::where('user_id', Auth::id())
+                ->whereHas('variant', function($query) {
+                    $query->where('stock_qty', '<=', 0);
+                })->delete();
+        } else {
+            $cart = session()->get('cart', []);
+            foreach ($cart as $id => $details) {
+                $variant = ProductVariant::find($id);
+                if (!$variant || $variant->stock_qty <= 0) {
+                    unset($cart[$id]);
+                }
+            }
+            session()->put('cart', $cart);
+        }
+
+        return back();
+    }
+
+    /**
+     * HELPERS
+     */
+
     private function getCartFromDb()
     {
         return CartItem::where('user_id', Auth::id())
@@ -81,99 +240,96 @@ class CartController extends Controller
             });
     }
 
-    /**
-     * Add or update an item in the DB cart (Authenticated only).
-     */
-    public function store(Request $request)
+    private function getCartFromSession()
     {
-        $request->validate([
-            'variant_id' => 'required|exists:product_variants,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
+        $sessionCart = collect(session()->get('cart', []));
+        if ($sessionCart->isEmpty()) return collect();
 
-        // 1. Find the existing item
-        $cartItem = CartItem::where('user_id', Auth::id())
-            ->where('product_variant_id', $request->variant_id)
-            ->first();
-
-        if ($cartItem) {
-            // 2. If it exists, increment
-            $cartItem->increment('quantity', $request->quantity, ['checked' => true]);
-        } else {
-            // 3. If it's new, create it with the base quantity
-            CartItem::create([
-                'user_id' => Auth::id(),
-                'product_variant_id' => $request->variant_id,
-                'quantity' => $request->quantity,
-                'checked' => true,
-            ]);
-        }
-
-        return back();
+        return ProductVariant::whereIn('id', $sessionCart->pluck('id'))
+            ->with(['product', 'discounts'])
+            ->get()
+            ->map(function ($variant) use ($sessionCart) {
+                $item = $sessionCart[$variant->id];
+                $variant->cart_quantity = $item['quantity'];
+                $variant->is_checked = $item['checked'] ?? true;
+                return $variant;
+            });
     }
 
-    /**
-     * Merge LocalStorage items into the Database.
-     */
-    public function merge(Request $request)
+    public function validateCartStock()
     {
-        $items = $request->input('items', []);
+        if (Auth::check()) {
+            // Use a join to be 100% sure we get the stock_qty directly
+            $cartItems = CartItem::where('user_id', Auth::id())->get();
 
-        foreach ($items as $item) {
-            // Ensure the variant exists
-            $variant = ProductVariant::find($item['id']);
+            foreach ($cartItems as $item) {
+                $variant = ProductVariant::find($item->product_variant_id);
+                
+                if (!$variant) {
+                    $item->delete();
+                    continue;
+                }
+
+                // Fallback check: if stock_qty is missing, assume 0 ONLY if explicitly null
+                $actualStock = $variant->stock_qty;
+
+                if ($item->quantity > $actualStock) {
+                    $item->update(['quantity' => max(0, (int)$actualStock)]);
+                }
+            }
+        } else {
+            $cart = session()->get('cart', []);
+            $updated = false;
+
+            foreach ($cart as $id => $details) {
+                $variant = ProductVariant::find($id);
+                
+                if (!$variant) {
+                    unset($cart[$id]);
+                    $updated = true;
+                    continue;
+                }
+
+                $actualStock = $variant->stock_qty;
+
+                if ($details['quantity'] > $actualStock) {
+                    $cart[$id]['quantity'] = max(0, (int)$actualStock);
+                    $updated = true;
+                }
+            }
+
+            if ($updated) {
+                session()->put('cart', $cart);
+            }
+        }
+    }
+
+    public static function mergeSessionCartToDb($user)
+    {
+        $sessionCart = session()->get('cart', []);
+        if (empty($sessionCart)) return;
+
+        foreach ($sessionCart as $variantId => $item) {
+            $variant = ProductVariant::find($variantId);
             if (!$variant) continue;
 
-            // Find existing record for this user/variant combo
-            $cartItem = CartItem::where('user_id', Auth::id())
-                ->where('product_variant_id', $item['id'])
+            $cartItem = CartItem::where('user_id', $user->id)
+                ->where('product_variant_id', $variantId)
                 ->first();
 
             if ($cartItem) {
-                // If it exists, add the quantities together
-                $cartItem->increment('quantity', $item['quantity'], [
-                    'checked' => $item['checked'] ?? true
-                ]);
+                // Corrected to stock_qty
+                $newQty = min($cartItem->quantity + $item['quantity'], $variant->stock_qty);
+                $cartItem->update(['quantity' => $newQty]);
             } else {
-                // If it's new, just create it
                 CartItem::create([
-                    'user_id' => Auth::id(),
-                    'product_variant_id' => $item['id'],
-                    'quantity' => $item['quantity'],
+                    'user_id' => $user->id,
+                    'product_variant_id' => $variantId,
+                    'quantity' => min($item['quantity'], $variant->stock_qty),
                     'checked' => $item['checked'] ?? true,
                 ]);
             }
         }
-
-        return back();
-    }
-
-    /**
-     * Update quantity or checked status in DB.
-     */
-    public function update(Request $request, $variantId)
-    {
-        $request->validate([
-            'quantity' => 'integer|min:1',
-            'checked' => 'boolean'
-        ]);
-
-        CartItem::where('user_id', Auth::id())
-            ->where('product_variant_id', $variantId)
-            ->update($request->only(['quantity', 'checked']));
-
-        return back();
-    }
-
-    /**
-     * Remove item from DB.
-     */
-    public function destroy($variantId)
-    {
-        CartItem::where('user_id', Auth::id())
-            ->where('product_variant_id', $variantId)
-            ->delete();
-
-        return back();
+        session()->forget('cart');
     }
 }

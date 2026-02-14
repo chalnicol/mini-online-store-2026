@@ -36,7 +36,8 @@ class UserResource extends JsonResource
             'isBlocked' => (bool) $this->is_blocked,
             //..
             'unreadNotificationsCount' => (int) ($this->unread_notifications_count ?? 0),
-            'cartCount' => (int) ($this->cart_items_sum_quantity ?? 0),
+            // 'cartCount' => (int) ($this->cart_item_count ?? 0),
+           
         
         ];
     }

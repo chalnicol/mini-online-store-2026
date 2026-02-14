@@ -8,6 +8,7 @@ import type {
     PaginatedResponse,
 } from '@/types/store';
 import { router, useForm } from '@inertiajs/react';
+import { Bell } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface NotificationsProps {
@@ -254,9 +255,13 @@ const Notifications = ({ data }: NotificationsProps) => {
                     )}
                 </div>
             ) : (
-                <div className="mt-3 flex min-h-44 flex-col items-center justify-center rounded border border-gray-300 bg-gray-100 shadow">
-                    <p className="text-lg font-bold text-gray-400 md:text-xl">
+                <div className="mt-3 flex flex-col items-center justify-center py-10 text-center">
+                    <Bell size={64} className="mb-4 text-gray-300" />
+                    <h2 className="text-2xl font-bold text-gray-800">
                         No notifications found.
+                    </h2>
+                    <p className="mb-6 text-gray-500">
+                        You're all caught up! Check back later for updates.
                     </p>
                 </div>
             )}

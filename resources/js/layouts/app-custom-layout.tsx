@@ -1,4 +1,3 @@
-import CartMerger from '@/components/store/CartMerger';
 import FilterSearch from '@/components/store/FilterSearch';
 import Navbar from '@/components/store/Navbar';
 import { CartProvider } from '@/context/CartContext';
@@ -20,7 +19,6 @@ const CustomLayout: React.FC<CustomLayoutProps> = ({
     return (
         <FilterSearchProvider initialCategories={categories}>
             <CartProvider>
-                <CartMerger />
                 <div className="flex min-h-dvh flex-col bg-gray-50 text-gray-600">
                     <div className="sticky top-0 z-50 flex-none">
                         <Navbar />

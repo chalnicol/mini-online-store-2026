@@ -41,16 +41,20 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         
+        $user = $request->user();
+
+        $cartCount = $user 
+        ? (int) $user->cart_item_count 
+        : (int) collect($request->session()->get('cart', []))->sum('quantity');
+        
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user() 
-                    ? new UserResource(
-                        $request->user()->loadSum('cartItems', 'quantity')
-                    ) 
-                    : null,
+                'user' => $user ? new UserResource($user) : null,
+                // We pass the total count here so the guest also sees a count
             ],
+            'cartCount' => $cartCount, 
             'categories' =>Cache::rememberForever('global_category_tree', function () {
                 $tree = Category::whereNull('parent_id')
                     ->with('childrenRecursive')

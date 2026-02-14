@@ -1,8 +1,4 @@
-import type {
-    DeliveryTypeDetails,
-    Notification,
-    PaymentMethod,
-} from '@/types/store';
+import type { DeliveryTypeDetails, PaymentMethod } from '@/types/store';
 
 export const formRules: Record<string, string[]> = {
     firstName: ['Must be at least 2 characters long', 'Cannot contain numbers'],
@@ -62,38 +58,38 @@ export const deliveryTypes: DeliveryTypeDetails[] = [
     },
 ];
 
-export const notifications: Notification[] = [
-    {
-        id: 1,
-        senderId: 1,
-        senderName: 'Jane Doe',
-        isRead: false,
-        message: 'You are succesfully registered',
-        type: 'info',
-        url: '/profile',
-        date: '2026/01/01',
-    },
-    {
-        id: 2,
-        senderId: 2,
-        senderName: 'John Doe',
-        isRead: false,
-        message: 'This is some kind of notification',
-        type: 'success',
-        url: '/profile',
-        date: '2026/01/01',
-    },
-    {
-        id: 3,
-        senderId: 1,
-        senderName: 'Jane Doe',
-        isRead: true,
-        message: 'This is some kind of another notification',
-        type: 'info',
-        url: '/profile',
-        date: '2025/01/01',
-    },
-];
+// export const notifications: Notification[] = [
+//     {
+//         id: 1,
+//         senderId: 1,
+//         senderName: 'Jane Doe',
+//         isRead: false,
+//         message: 'You are succesfully registered',
+//         type: 'info',
+//         url: '/profile',
+//         date: '2026/01/01',
+//     },
+//     {
+//         id: 2,
+//         senderId: 2,
+//         senderName: 'John Doe',
+//         isRead: false,
+//         message: 'This is some kind of notification',
+//         type: 'success',
+//         url: '/profile',
+//         date: '2026/01/01',
+//     },
+//     {
+//         id: 3,
+//         senderId: 1,
+//         senderName: 'Jane Doe',
+//         isRead: true,
+//         message: 'This is some kind of another notification',
+//         type: 'info',
+//         url: '/profile',
+//         date: '2025/01/01',
+//     },
+// ];
 
 export const ADDRESS_TYPES = ['Home', 'Office', 'Other'] as const;
 

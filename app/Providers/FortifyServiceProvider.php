@@ -34,16 +34,6 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
-
-        // Override the default LoginResponse
-        // $this->app->instance(LoginResponseContract::class, new class implements LoginResponseContract {
-        //     public function toResponse($request)
-        //     {
-        //         // This checks the session for an 'intended' URL
-        //         // If none exists, it falls back to your dashboard
-        //         return redirect()->intended(config('fortify.home'));
-        //     }
-        // });
     }
 
     /**

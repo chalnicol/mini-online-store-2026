@@ -1,7 +1,7 @@
 import { AddressDetailsType } from '@/data';
 import type { AddressDetails } from '@/types/store';
 import { useForm } from '@inertiajs/react';
-import { Building, Home, MapPin, Plus } from 'lucide-react';
+import { Building, Home, MapPin, NotebookTabs, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ConfirmationModal from '../ConfirmationModal';
 import CustomButton from '../CustomButton';
@@ -92,22 +92,11 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
 
             {addresses.length > 0 ? (
                 <>
-                    <CustomButton
-                        color="primary"
-                        onClick={() => setShowForm(true)}
-                        className="mb-2"
-                        loading={processing}
-                    >
-                        <div className="flex items-center gap-x-1">
-                            <Plus size={16} />
-                            <span>New Address</span>
-                        </div>
-                    </CustomButton>
                     <div>
                         {addresses.map((address) => (
                             <div
                                 key={address.id}
-                                className="flex items-start gap-x-2.5 border-b border-gray-300 px-2 py-2.5 even:bg-gray-100"
+                                className="flex items-start gap-x-2.5 border-b border-gray-300 px-2 py-2.5 first:pt-0 even:bg-gray-100"
                             >
                                 <div className="flex aspect-square w-20 flex-none flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-gray-300 bg-white shadow">
                                     <div className="flex flex-grow items-center justify-center">
@@ -163,18 +152,45 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
                             </div>
                         ))}
                     </div>
+                    <CustomButton
+                        color="primary"
+                        onClick={() => setShowForm(true)}
+                        className="my-2"
+                        loading={processing}
+                    >
+                        <div className="flex items-center gap-x-1">
+                            <Plus size={16} />
+                            <span>New Address</span>
+                        </div>
+                    </CustomButton>
                 </>
             ) : (
-                <div className="mb-3 flex min-h-42 flex-col items-center justify-center gap-y-2 rounded border border-gray-300 bg-gray-100 shadow">
-                    <p className="text-lg font-semibold text-gray-400">
-                        You have no addresses set yet.
+                // <div className="mb-3 flex min-h-42 flex-col items-center justify-center gap-y-2 rounded border border-gray-300 bg-gray-100 shadow">
+                //     <p className="text-lg font-semibold text-gray-400">
+                //         You have no addresses set yet.
+                //     </p>
+                //     <button
+                //         className="cursor-pointer rounded bg-sky-900 px-3 py-1 font-semibold text-white hover:bg-sky-800"
+                //         onClick={() => setShowForm(true)}
+                //     >
+                //         Add Address
+                //     </button>
+                // </div>
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <NotebookTabs size={64} className="mb-4 text-gray-300" />
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        No addresses found.
+                    </h2>
+                    <p className="mb-6 text-gray-500">
+                        You haven't added any addresses yet.
                     </p>
-                    <button
-                        className="cursor-pointer rounded bg-sky-900 px-3 py-1 font-semibold text-white hover:bg-sky-800"
+                    <CustomButton
+                        label="Add Address"
+                        type="button"
+                        size="lg"
+                        color="primary"
                         onClick={() => setShowForm(true)}
-                    >
-                        Add Address
-                    </button>
+                    />
                 </div>
             )}
 

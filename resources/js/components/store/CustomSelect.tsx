@@ -1,4 +1,5 @@
 import { useOutsideClick } from '@/hooks/user-outside-click';
+import { cn } from '@/lib/utils';
 import { SelectOptionsType } from '@/types/store';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
@@ -46,7 +47,7 @@ const CustomSelect = <T,>({
         /* 1. Use 'inline-flex flex-col' so the container wraps its children tightly */
         <div
             ref={contRef}
-            className={`relative inline-flex flex-col ${className}`}
+            className={cn('relative inline-flex flex-col', className)}
         >
             <button
                 type="button"

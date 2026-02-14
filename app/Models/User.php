@@ -68,6 +68,9 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    protected $appends = ['cart_item_count'];
+
+
     public function sendPasswordResetNotification($token)
     {
         // This triggers your custom notification instead of the default one
@@ -139,6 +142,5 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Automatically include this in the JSON/Inertia response.
      */
-    protected $appends = ['cart_item_count'];
 
 }
