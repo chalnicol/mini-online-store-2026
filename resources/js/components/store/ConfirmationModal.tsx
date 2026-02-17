@@ -25,12 +25,12 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <BaseModal size="lg">
             <div className="space-y-2 rounded border border-gray-400 bg-white px-4 py-3 shadow-lg">
                 <p className="font-bold text-gray-500">{finalMessage}</p>
-                {details && (
+                {details && details !== '' && (
                     <p className="rounded border border-gray-400 bg-gray-100 p-2 text-sm font-semibold text-gray-500">
                         {details}
                     </p>
                 )}
-                <div className="mt-6 flex items-center space-x-2">
+                <div className="mt-4 flex items-center space-x-2">
                     <CustomButton
                         type="button"
                         label="Cancel"

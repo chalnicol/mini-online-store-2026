@@ -33,7 +33,7 @@ export interface Product {
     reviews: Review[];
     variants: ProductVariant[];
     averageRating: number;
-    // reviewsCount?: number;
+    reviewsCount?: number;
     variantsCount: number;
     createdAt: string;
     updatedAt: string;
@@ -63,20 +63,14 @@ export interface ProductVariant {
     reviews?: Review[]; // If you're eager loading reviews
 }
 
-export interface CheckoutItem extends ProductVariant {
-    quantity: number;
-}
-
-export interface CartItem {
+export interface CheckoutItem {
     id: number;
     quantity: number;
-    isChecked: boolean;
     variant: ProductVariant;
-    // product: {
-    //     id: number;
-    //     name: string;
-    //     slug: string;
-    // };
+}
+
+export interface CartItem extends CheckoutItem {
+    isChecked: boolean;
 }
 
 export type DiscountType = 'fixed' | 'percentage';
@@ -183,11 +177,10 @@ export interface PaymentMethod {
 export type DeliveryType = 'standard' | 'express' | 'custom';
 
 export interface DeliveryTypeDetails {
-    id: number;
     name: string;
     price: number;
     description: string;
-    type: DeliveryType;
+    // type: DeliveryType;
     // requiresInput: boolean;
     dateSchedule: string | null;
     timeSchedule: string[] | null;
@@ -196,6 +189,23 @@ export interface DeliveryTypeDetails {
 export interface CustomDeliveryTimeDetails {
     date: string;
     time: string;
+}
+
+export type VoucherType = 'fixed' | 'percentage' | 'shipping';
+
+export interface VoucherDetails {
+    id: number;
+    code: string;
+    description: string;
+    type: VoucherType;
+    value: number;
+    isActive: boolean;
+    minSpend: number;
+    expiresAt: string;
+    isClaimed: boolean;
+    amountNeeded: number;
+    isPersonal: boolean;
+    canApply: boolean;
 }
 
 /* auth types..
@@ -271,7 +281,7 @@ export interface ResourceResponse<T> {
     data: T;
 }
 
-interface SelectOptionsType<T> {
+export interface SelectOptionsType<T> {
     id: number;
     label: string;
     value: T;

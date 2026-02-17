@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionSeeder::class, 
             CategorySeeder::class, 
             UserProfileSeeder::class,
+            VoucherSeeder::class,
         ]);
         
         $products = Product::factory(30)->create();

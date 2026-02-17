@@ -5,113 +5,128 @@ import type {
 } from '@/types/store';
 import { formatShortDate, formatTo12Hour } from '@/utils/DateUtils';
 import gsap from 'gsap';
-import { Circle, SquarePen } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
+// We extend the details to include the 'type' string for the logic below
 interface DeliveryTypeCardProps {
-    t: DeliveryTypeDetails;
+    t: DeliveryTypeDetails & { type: DeliveryType };
     deliveryType: DeliveryType;
-    // className?: string;
     timeData: CustomDeliveryTimeDetails | null;
     onClick: (type: DeliveryType) => void;
     onEdit: (type: DeliveryType) => void;
 }
+
 const DeliveryTypeCard: React.FC<DeliveryTypeCardProps> = ({
     t,
-    // className,
     timeData,
     deliveryType,
     onClick,
     onEdit,
 }) => {
     const scheduleContRef = useRef<HTMLDivElement>(null);
+    const isSelected = t.type === deliveryType;
 
     useEffect(() => {
-        if (deliveryType === 'custom' && scheduleContRef.current) {
-            gsap.fromTo(
-                scheduleContRef.current,
-                { height: 0 },
-                { height: 'auto', duration: 0.6, ease: 'power4.out' },
-            );
-        }
-        return () => {
-            if (scheduleContRef.current) {
-                gsap.killTweensOf(scheduleContRef.current);
+        // Only animate if this specific card is the 'custom' one AND it's selected
+        if (t.type === 'custom' && scheduleContRef.current) {
+            if (isSelected) {
+                gsap.fromTo(
+                    scheduleContRef.current,
+                    { height: 0, opacity: 0 },
+                    {
+                        height: 'auto',
+                        opacity: 1,
+                        duration: 0.4,
+                        ease: 'power2.out',
+                    },
+                );
+            } else {
+                gsap.to(scheduleContRef.current, {
+                    height: 0,
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: 'power2.in',
+                });
             }
-        };
-    }, [deliveryType, scheduleContRef.current]);
+        }
+    }, [isSelected, t.type]);
 
     return (
         <div
-            className={`group relative flex flex-1 flex-col rounded border border-gray-400 p-2 ${
-                t.type == deliveryType
+            className={`group relative flex flex-1 flex-col rounded border p-2 transition-all duration-200 ${
+                isSelected
                     ? 'border-sky-900 bg-gray-50'
-                    : 'bg-white hover:border-sky-900 hover:shadow-sm'
+                    : 'border-gray-400 bg-white hover:border-sky-900 hover:shadow-sm'
             }`}
-            // onClick={() => onChange(t.type)}
-            // disabled={t.type == deliveryType}
         >
             <button
-                className={`relative flex flex-grow items-start ${
-                    t.type == deliveryType ? '' : 'cursor-pointer'
+                type="button"
+                className={`relative flex flex-grow items-start text-left ${
+                    isSelected ? 'cursor-default' : 'cursor-pointer'
                 }`}
                 onClick={() => onClick(t.type)}
             >
-                <p className="absolute top-1 right-1">
-                    {t.type == deliveryType ? (
-                        <Circle
-                            size={12}
-                            className="fill-current text-sky-900"
-                        />
-                    ) : (
-                        <Circle size={12} />
-                    )}
-                </p>
-                <div className="relative flex w-full flex-col items-start">
-                    <h4 className="font-bold text-gray-600">{t.name}</h4>
+                <div className="absolute top-1 right-1">
+                    <Circle
+                        size={12}
+                        className={`${isSelected ? 'fill-current text-sky-900' : 'text-gray-400'}`}
+                    />
+                </div>
 
+                <div className="flex w-full flex-col items-start pr-6">
+                    <h4 className="font-bold text-gray-600">{t.name}</h4>
                     <p className="font-bold text-orange-800">
-                        ₱<span className="text-lg">{t.price}</span>
-                        .00
+                        ₱<span className="text-lg">{t.price}</span>.00
                     </p>
-                    <p className="text-left text-sm">{t.description}</p>
+                    <p className="mt-1 text-sm leading-tight text-gray-500">
+                        {t.description}
+                    </p>
                 </div>
             </button>
 
-            {t.type == 'custom' && (
+            {/* Custom Schedule Section */}
+            {t.type === 'custom' && (
                 <div
                     ref={scheduleContRef}
-                    className={`mt-1 flex w-full flex-none items-start space-y-1 overflow-hidden border-t border-gray-400 py-2 text-left text-sm ${
-                        t.type == deliveryType ? '' : 'hidden'
-                    }`}
+                    className="overflow-hidden" // Removed 'hidden' class to let GSAP handle height 0
+                    style={{ height: isSelected ? 'auto' : 0 }}
                 >
-                    <div className="flex-1 space-y-1">
-                        <div className="flex gap-x-1 font-semibold">
-                            <p className="min-w-12 bg-gray-300 px-2 text-gray-600">
-                                Date
-                            </p>
-                            <p className="text-gray-600">
-                                {timeData
-                                    ? formatShortDate(timeData.date)
-                                    : '-'}
-                            </p>
+                    <div className="mt-2 flex w-full items-start border-t border-gray-300 pt-2 text-sm">
+                        <div className="flex-1 space-y-1">
+                            <div className="flex gap-x-1 font-semibold">
+                                <span className="flex min-w-12 items-center bg-gray-200 px-2 text-xs text-gray-600 uppercase">
+                                    Date
+                                </span>
+                                <span className="text-gray-700">
+                                    {timeData
+                                        ? formatShortDate(timeData.date)
+                                        : '-'}
+                                </span>
+                            </div>
+                            <div className="flex gap-x-1 font-semibold">
+                                <span className="flex min-w-12 items-center bg-gray-200 px-2 text-xs text-gray-600 uppercase">
+                                    Time
+                                </span>
+                                <span className="text-gray-700">
+                                    {timeData
+                                        ? formatTo12Hour(timeData.time)
+                                        : '-'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex gap-x-1 font-semibold">
-                            <p className="min-w-12 bg-gray-300 px-2 text-gray-600">
-                                Time
-                            </p>
-                            <p className="text-gray-600">
-                                {timeData ? formatTo12Hour(timeData.time) : '-'}
-                            </p>
-                        </div>
+                        <button
+                            type="button"
+                            className="ms-auto cursor-pointer rounded border border-sky-900 px-1.5 text-xs text-sky-900 transition-colors hover:text-gray-400"
+                            onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggerring the card's onClick
+                                onEdit(t.type);
+                            }}
+                        >
+                            {/* <SquarePen size={18} /> */}
+                            edit
+                        </button>
                     </div>
-
-                    <button
-                        className="ms-auto cursor-pointer rounded p-1 font-semibold text-sky-900 hover:text-sky-800"
-                        onClick={() => onEdit(t.type)}
-                    >
-                        <SquarePen size={16} />
-                    </button>
                 </div>
             )}
         </div>

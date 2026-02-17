@@ -23,11 +23,11 @@ class CartController extends Controller
             : $this->getCartFromSession();
 
         // Split into two lists
-        $available = $allProducts->filter(fn($v) => $v->stock_qty > 0);
-        $unavailable = $allProducts->filter(fn($v) => $v->stock_qty <= 0);
+        $available = $allProducts->filter(fn($item) => $item->variant->stock_qty > 0);
+        $unavailable = $allProducts->filter(fn($item) => $item->variant->stock_qty <= 0);
 
-        $subtotal = $available->filter(fn($v) => $v->is_checked)
-            ->sum(fn($v) => $v->calculated_price * $v->cart_quantity);
+        $subtotal = $available->filter(fn($item) => $item->checked)
+            ->sum(fn($item) => $item->variant->calculated_price * $item->quantity);
 
         return Inertia::render('shop/cart', [
             'products' => CartItemResource::collection($available),
@@ -72,6 +72,7 @@ class CartController extends Controller
                 'quantity' => $newQty,
                 'checked' => true
             ];
+
             session()->put('cart', $cart);
         }
 
@@ -97,13 +98,14 @@ class CartController extends Controller
 
             if ($item) {
                 if (isset($data['quantity'])) {
-                    $item->quantity = min($data['quantity'], $variant->stock_qty);
+                    $item->quantity = min($data['quantity'], $item->variant->stock_qty);
                 }
                 if (isset($data['checked'])) {
                     $item->checked = $data['checked'];
                 }
                 $item->save();
             }
+
         } else {
             $cart = session()->get('cart', []);
             if (isset($cart[$variantId])) {
@@ -183,7 +185,7 @@ class CartController extends Controller
         } else {
             $cart = collect(session()->get('cart', []))
                 ->filter(function ($item) {
-                    $variant = \App\Models\ProductVariant::find($item['id']);
+                    $variant = ProductVariant::find($item['id']);
                     
                     // Keep the item if:
                     // 1. It's NOT checked OR 
@@ -231,29 +233,48 @@ class CartController extends Controller
     {
         return CartItem::where('user_id', Auth::id())
             ->with(['variant.product', 'variant.discounts'])
-            ->get()
-            ->map(function ($cartItem) {
-                $variant = $cartItem->variant;
-                $variant->cart_quantity = $cartItem->quantity;
-                $variant->is_checked = (bool) $cartItem->checked;
-                return $variant;
-            });
+            ->get();
+            // ->map(function ($cartItem) {
+            //     $variant = $cartItem->variant;
+            //     $variant->cart_quantity = $cartItem->quantity;
+            //     $variant->is_checked = (bool) $cartItem->checked;
+            //     return $variant;
+            // });
     }
 
     private function getCartFromSession()
     {
+        // 1. Get the session data (Keyed by variant ID)
         $sessionCart = collect(session()->get('cart', []));
+        
         if ($sessionCart->isEmpty()) return collect();
 
-        return ProductVariant::whereIn('id', $sessionCart->pluck('id'))
-            ->with(['product', 'discounts'])
+        // 2. Fetch the Variants with their relations
+        // We key the variants by ID so we can easily look them up in the next step
+        $variants = ProductVariant::with(['product', 'discounts'])
+            ->whereIn('id', $sessionCart->pluck('id'))
             ->get()
-            ->map(function ($variant) use ($sessionCart) {
-                $item = $sessionCart[$variant->id];
-                $variant->cart_quantity = $item['quantity'];
-                $variant->is_checked = $item['checked'] ?? true;
-                return $variant;
-            });
+            ->keyBy('id');
+
+        // 3. Map the SESSION data into a "Fake" CartItem structure
+        return $sessionCart->map(function ($sessionItem) use ($variants) {
+            $variant = $variants->get($sessionItem['id']);
+
+            // If for some reason the variant was deleted from DB but exists in session
+            if (!$variant) return null;
+
+            /**
+             * We return a structure that looks EXACTLY like your database CartItem
+             * so that your API Resource (or React) doesn't break.
+             */
+            return (object) [
+                'id' => $sessionItem['id'], // Use variant ID as item ID for guests
+                'product_variant_id' => $sessionItem['id'],
+                'quantity' => $sessionItem['quantity'],
+                'checked' => $sessionItem['checked'] ?? true, // Match your TS 'isChecked'
+                'variant' => $variant, 
+            ];
+        })->filter()->values(); // Remove nulls and reset array keys
     }
 
     public function validateCartStock()

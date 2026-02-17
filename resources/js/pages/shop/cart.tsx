@@ -1,11 +1,13 @@
 import CartItemCard from '@/components/store/CartItemCard';
+import ConfirmationModal from '@/components/store/ConfirmationModal';
 import CustomButton from '@/components/store/CustomButton';
 import TitleBar from '@/components/store/TitleBar';
 import { useCart } from '@/context/CartContext';
 import CustomLayout from '@/layouts/app-custom-layout';
 import { CartItem } from '@/types/store';
-import { Link, router, usePage } from '@inertiajs/react';
-import { ShoppingBag } from 'lucide-react';
+import { formatPrice } from '@/utils/PriceUtils';
+import { Link, router } from '@inertiajs/react';
+import { Book, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 
 interface CartProps {
@@ -18,9 +20,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
     // Extract products from the resource wrapper
     const displayItems = products || [];
 
-    const { processing, removeSelected, toggleAll } = useCart();
-    const { auth } = usePage<{ auth: any }>().props;
-
+    const { processing, removeSelected, removeFromCart, toggleAll } = useCart();
     const [toDeleteId, setToDeleteId] = useState<number | null>(null);
 
     // Use displayItems (from Laravel) for UI calculations
@@ -29,23 +29,28 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
         displayItems.length > 0 && displayItems.every((item) => item.isChecked);
     const selectedCount = displayItems.filter((item) => item.isChecked).length;
 
+    const [toDeleteSelected, setToDeleteSelected] = useState<boolean>(false);
+
     if (displayItems.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-                <ShoppingBag size={64} className="mb-4 text-gray-300" />
-                <h2 className="text-2xl font-bold text-gray-800">
-                    Your cart is empty
-                </h2>
-                <p className="mb-6 text-gray-500">
-                    Looks like you haven't added anything yet.
-                </p>
-                <Link
-                    href="/"
-                    className="rounded-lg bg-sky-900 px-6 py-2 font-semibold text-white hover:bg-sky-800"
-                >
-                    Go Shopping
-                </Link>
-            </div>
+            <>
+                <TitleBar title="Cart" className="mb-4" />
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <ShoppingBag size={64} className="mb-4 text-gray-300" />
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        Your cart is empty
+                    </h2>
+                    <p className="mb-6 text-gray-500">
+                        Looks like you haven't added anything yet.
+                    </p>
+                    <Link
+                        href="/"
+                        className="rounded-lg bg-sky-900 px-6 py-2 font-semibold text-white hover:bg-sky-800"
+                    >
+                        Go Shopping
+                    </Link>
+                </div>
+            </>
         );
     }
 
@@ -53,16 +58,38 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
         //..
     };
 
+    const handleCloseConfirmation = () => {
+        setToDeleteId(null);
+        setToDeleteSelected(false);
+    };
+
+    const handleConfirmDelete = () => {
+        if (toDeleteSelected) {
+            removeSelected();
+        } else {
+            removeFromCart(toDeleteId || 0);
+        }
+        handleCloseConfirmation();
+    };
+
+    const item = displayItems.find((i) => i.id === toDeleteId);
+
+    const toDeleteItem = item
+        ? (item.variant.product?.variantsCount || 1) > 1
+            ? `${item.variant.product?.name} (${item.variant.name})`
+            : item.variant.product?.name || 'No Product Name'
+        : '';
+
     return (
         <>
             <TitleBar title="Shopping Cart" className="mb-4" />
 
-            <div className="flex flex-col gap-y-6 md:flex-row md:gap-x-4 lg:gap-x-5 xl:gap-x-6">
+            <div className="flex flex-col gap-y-6 md:flex-row md:gap-x-3 lg:gap-x-5 xl:gap-x-6">
                 <div className="flex-1 space-y-3">
                     <div className="rounded border border-gray-300 bg-white px-3 py-2 font-semibold shadow">
                         <p className="mb-1 text-lg font-bold">Items</p>
 
-                        <div className="flex flex-col gap-2 border-b border-gray-300 py-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col justify-between gap-2 border-b border-gray-300 py-2 sm:flex-row">
                             <div className="flex items-center gap-2">
                                 <input
                                     type="checkbox"
@@ -88,19 +115,19 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
                             <CustomButton
                                 color="danger"
                                 size="xs"
-                                onClick={removeSelected}
+                                onClick={() => setToDeleteSelected(true)}
                                 // loading={processing}
                                 disabled={processing || !selectedCount}
-                                label="DELETE SELECTED"
+                                label="Remove Selected"
+                                className="uppercase"
                             />
                         </div>
 
-                        <div className="cart-items">
+                        <div>
                             {displayItems.map((item) => (
                                 <CartItemCard
                                     key={item.id}
                                     item={item}
-                                    toDeleteId={toDeleteId}
                                     onDelete={(id) => setToDeleteId(id)}
                                 />
                             ))}
@@ -160,58 +187,80 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
                     )}
                 </div>
 
-                <div className="w-full flex-none md:w-70 lg:w-80">
-                    <div className="flex min-h-68 flex-col rounded border border-gray-300 bg-white px-3 py-2 font-semibold shadow">
+                <div className="w-full flex-none md:w-80">
+                    <div className="flex min-h-60 flex-col rounded border border-gray-300 bg-white px-3 py-2 font-semibold shadow">
                         <p className="mb-1 text-lg font-bold">Order Summary</p>
 
-                        <div className="my-2 flex justify-between">
-                            <p>
-                                Subtotal{' '}
+                        <div className="mt-2 flex flex-grow flex-col space-y-3">
+                            <div className="flex justify-between">
+                                <p>
+                                    Subtotal{' '}
+                                    <span className="text-sm">
+                                        ({displayItems.length} items)
+                                    </span>
+                                </p>
+                                <p className="font-bold">
+                                    {formatPrice(subtotal)}
+                                </p>
+                            </div>
+                            {/* <div className="flex gap-x-1.5">
+                                <input
+                                    type="text"
+                                    className="flex-1 rounded border border-gray-400 bg-white px-2 py-1 focus:ring-1 focus:ring-sky-600 focus:outline-none"
+                                    placeholder="Voucher Code"
+                                />
+                                <CustomButton
+                                    label="Apply"
+                                    type="button"
+                                    color="primary"
+                                    disabled={true}
+                                    className="flex-none"
+                                />
+                            </div> */}
+                            <div className="flex gap-2 border-y border-gray-400 py-2 text-sky-800">
+                                <Book
+                                    size={22}
+                                    className="mt-1 flex-shrink-0"
+                                />
                                 <span className="text-sm">
-                                    ({displayItems.length} items)
+                                    Shipping fee and vouchers applied at
+                                    checkout. Free shipping on orders over ₱300!
                                 </span>
-                            </p>
-                            <p>₱{subtotal.toLocaleString()}</p>
-                        </div>
-                        <div className="my-2 flex items-baseline justify-between">
-                            <p>Shipping Fee</p>
-                            <p className="text-sm text-orange-600">
-                                Calculated at Checkout
-                            </p>
-                        </div>
-                        <div className="my-4 flex gap-x-1.5">
-                            <input
-                                type="text"
-                                className="flex-1 rounded border border-gray-400 bg-white px-2 py-1 focus:ring-1 focus:ring-sky-600 focus:outline-none"
-                                placeholder="Voucher Code"
-                            />
-                            <CustomButton
-                                label="Apply"
-                                type="button"
-                                color="primary"
-                                disabled={true}
-                                className="flex-none"
-                            />
-                        </div>
-                        <hr className="mt-3 border-gray-400 shadow" />
-                        <div className="flex justify-between py-2">
-                            <p>Total</p>
-                            <p className="text-lg text-sky-900">
-                                ₱{subtotal.toLocaleString()}
-                            </p>
-                        </div>
+                            </div>
 
-                        <CustomButton
-                            label="Proceed To Checkout"
-                            type="button"
-                            color="primary"
-                            size="lg"
-                            disabled={!isChecked}
-                            onClick={() => router.visit('/checkout')}
-                        />
+                            <div className="mt-auto">
+                                <div className="flex justify-between py-2">
+                                    <p>Total</p>
+                                    <p className="text-lg font-bold text-sky-900">
+                                        {formatPrice(subtotal)}
+                                    </p>
+                                </div>
+
+                                <CustomButton
+                                    label="Proceed To Checkout"
+                                    type="button"
+                                    color="primary"
+                                    size="lg"
+                                    disabled={!isChecked}
+                                    onClick={() => router.visit('/checkout')}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {(toDeleteSelected || toDeleteId) && (
+                <ConfirmationModal
+                    onClose={handleCloseConfirmation}
+                    onConfirm={handleConfirmDelete}
+                    message={`Are you sure you want to remove ${
+                        toDeleteSelected ? 'selected items' : 'this item'
+                    } from cart?`}
+                    details={toDeleteItem}
+                />
+            )}
         </>
     );
 };

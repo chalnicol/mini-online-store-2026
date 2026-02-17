@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { Minus, Plus } from 'lucide-react';
 import CustomButton from './CustomButton';
 
@@ -7,6 +8,7 @@ interface QuantityControlsProps {
     disabled: boolean;
     onChange: (value: number) => void;
     loading?: boolean;
+    size?: 'sm' | 'md';
 }
 
 const QuantityControls = ({
@@ -14,6 +16,7 @@ const QuantityControls = ({
     max,
     loading,
     disabled,
+    size = 'md',
     onChange,
 }: QuantityControlsProps) => {
     const handleQuantityChange = (type: 'increment' | 'decrement') => {
@@ -30,7 +33,7 @@ const QuantityControls = ({
     // };
 
     return (
-        <div className="flex">
+        <div className={cn('flex', size === 'sm' ? 'text-sm' : '')}>
             <CustomButton
                 color="secondary"
                 onClick={() => handleQuantityChange('decrement')}
@@ -41,7 +44,7 @@ const QuantityControls = ({
                 <Minus size={14} />
             </CustomButton>
 
-            <div className="z-10 w-12 flex-none border border-gray-400 bg-white text-center font-semibold select-none">
+            <div className="z-10 w-11 flex-none border border-gray-400 bg-white text-center font-semibold select-none">
                 {value}
             </div>
             <CustomButton

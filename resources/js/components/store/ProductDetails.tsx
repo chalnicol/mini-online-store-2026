@@ -1,8 +1,7 @@
-// import { useCart } from '@/contexts/CartContext';
 import { useCart } from '@/context/CartContext';
 import type { Product, ProductVariant } from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import BaseModal from './BaseModal';
@@ -16,30 +15,35 @@ interface ProductDetailsProps {
 }
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
-    const { auth } = usePage<{ auth: any }>().props;
+    const { url } = usePage();
     const { addToCart, processing } = useCart();
 
     const variants = product.variants;
     const isSingleVariant = variants.length === 1;
 
-    // --- State ---
-    const [quantity, setQuantity] = useState<number>(1);
+    // --- 1. NEW: Extract Variant ID from URL on Load ---
+    const initialVariantId = useMemo(() => {
+        const queryParams = new URLSearchParams(url.split('?')[1]);
+        return queryParams.get('variant');
+    }, []); // Only run once on mount
 
-    // We'll track selected attributes as an object, e.g., { Size: 'L', Color: 'Blue' }
+    // --- 2. ENHANCED: Initialize state with the URL variant if it exists ---
     const [selectedAttributes, setSelectedAttributes] = useState<
         Record<string, string>
-    >(variants[0]?.attributes || {});
+    >(() => {
+        if (initialVariantId) {
+            const found = variants.find(
+                (v) => String(v.id) === initialVariantId,
+            );
+            if (found) return found.attributes;
+        }
+        return variants[0]?.attributes || {};
+    });
 
+    const [quantity, setQuantity] = useState<number>(1);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    // --- Logic to extract unique attribute keys and values ---
-    // This finds all unique keys (e.g., ["Size", "Color"])
-    const attributeKeys = useMemo(() => {
-        if (!variants.length) return [];
-        return Object.keys(variants[0].attributes);
-    }, [variants]);
-
-    // Finds the current active variant based on ALL selected attributes
+    // --- 3. LOGIC: Identify active variant based on attributes ---
     const activeVariant = useMemo(() => {
         const found = variants.find((v) =>
             Object.entries(selectedAttributes).every(
@@ -48,6 +52,27 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
         );
         return found || variants[0];
     }, [selectedAttributes, variants]);
+
+    const attributeKeys = useMemo(() => {
+        if (!variants.length) return [];
+        return Object.keys(variants[0].attributes);
+    }, [variants]);
+
+    // --- 4. NEW: Sync URL with Selection ---
+    // This updates the address bar whenever activeVariant changes
+    useEffect(() => {
+        const currentUrl = new URL(window.location.href);
+
+        // If it's the first variant, keep the URL clean; otherwise, add param
+        if (activeVariant.id === variants[0]?.id) {
+            currentUrl.searchParams.delete('variant');
+        } else {
+            currentUrl.searchParams.set('variant', activeVariant.id.toString());
+        }
+
+        // replaceState updates the URL without refreshing the page or adding to history stack
+        window.history.replaceState({}, '', currentUrl.toString());
+    }, [activeVariant.id, variants]);
 
     // --- Handlers ---
     const handleAttributeChange = (key: string, value: string) => {
@@ -67,6 +92,19 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
         });
     };
 
+    // --- NEW: Buy Now Handler (Direct to Checkout) ---
+    const handleBuyNow = () => {
+        // We navigate directly to the checkout route with the required query params
+        router.visit('/checkout', {
+            method: 'get',
+            data: {
+                source: 'buy_now',
+                variant_id: activeVariant.id,
+                qty: quantity,
+            },
+        });
+    };
+
     useEffect(() => {
         setQuantity(1);
     }, [activeVariant.id]);
@@ -74,18 +112,6 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
     const displayImage =
         activeVariant.imagePath ||
         'https://placehold.co/600x400?text=No+Image+Available';
-
-    // Find if this variant is already in the cart
-    // const itemInCart = cartItems.find(
-    //     (item) => item.variant.id === activeVariant.id,
-    // );
-    // const qtyInCart = itemInCart ? itemInCart.quantity : 0;
-
-    // // Calculate remaining available stock
-    // const availableToBuy = activeVariant.stockQty - qtyInCart;
-
-    // // Disable button if no more can be added
-    // const isMaxedOut = qtyInCart >= activeVariant.stockQty;
 
     return (
         <>
@@ -130,7 +156,6 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
                 {/* Details Section */}
                 <div className="flex-1 space-y-6">
-                    {/* {error && <PromptMessage type="error" message={error} />} */}
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold md:text-xl lg:text-2xl xl:text-3xl">
                             {product.name}
@@ -148,7 +173,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                         </div>
                         <Rating
                             rating={product.averageRating}
-                            numReviews={product.reviewCount}
+                            numReviews={product.reviewsCount}
                         />
                     </div>
 
@@ -161,7 +186,6 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                                     </p>
                                 </FlexDetail>
 
-                                {/* DYNAMIC ATTRIBUTE SELECTORS */}
                                 {attributeKeys.map((key) => {
                                     const options = Array.from(
                                         new Set(
@@ -234,9 +258,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                             disabled={
                                 activeVariant.stockQty === 0 || processing
                             }
-                            onClick={() => {
-                                /* logic */
-                            }}
+                            onClick={handleBuyNow}
                         />
                         <CustomButton
                             label="Add to Cart"
@@ -252,11 +274,12 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Success Modal */}
             {showSuccess && (
                 <BaseModal>
                     <div className="mt-3 w-full max-w-md overflow-hidden rounded bg-white shadow-lg">
                         <div className="relative px-4 py-3">
-                            {/* Close Button */}
                             <button
                                 className="absolute top-2.5 right-3 aspect-square cursor-pointer rounded-full border border-gray-600 bg-gray-500 px-0.5 text-white shadow"
                                 onClick={() => setShowSuccess(false)}
@@ -268,7 +291,6 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                                 Item added to cart successfully!
                             </p>
 
-                            {/* Mini Summary (Optional, but nice to show what was added) */}
                             <div className="mt-2 flex items-center gap-3 rounded bg-gray-50 p-2 text-sm">
                                 <img
                                     src={

@@ -77,11 +77,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
 
+    Route::post('/checkout/apply-voucher', [CheckoutController::class, 'applyVoucher'])->name('checkout.apply-voucher');
 
+    Route::post('/checkout/update-delivery', [CheckoutController::class, 'updateDelivery'])->name('checkout.update-delivery');
+    
+    Route::post('/checkout/remove-voucher', [CheckoutController::class, 'removeVoucher'])->name('checkout.remove-voucher');
 
-    // test send
-    Route::get('/test-notification', [NotificationController::class, 'test'])
-        ->name('notifications.test');
+    //vouchers
+    // For fetching the list in your Global Window (JSON response)
+    Route::get('/vouchers/available', [VoucherController::class, 'index'])->name('vouchers.index');
+    
+    // For the actual claim action
+    Route::post('/vouchers/{voucher}/claim', [VoucherController::class, 'claim'])->name('vouchers.claim');
+
 
 });
 

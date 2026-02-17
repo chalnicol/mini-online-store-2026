@@ -28,7 +28,7 @@ const CheckoutAddressCard = ({
                     <span className="text-sm">{address.contactNumber}</span>
                 </p>
                 {address.isDefault == true && (
-                    <p className="inline-block bg-sky-900 px-2 text-xs font-bold text-white shadow-sm">
+                    <p className="inline-block bg-gray-300 px-2 text-xs font-semibold text-gray-600 shadow">
                         Default
                     </p>
                 )}

@@ -34,25 +34,26 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     };
 
     const btnClrClass: Record<ButtonColor, string> = {
-        primary: 'bg-sky-900 hover:bg-sky-800 text-white border border-sky-800',
+        primary: 'bg-sky-900 hover:bg-sky-800 text-white border-sky-800',
         secondary:
-            'bg-gray-200 hover:bg-gray-100 text-gray-600 border border-gray-400',
-        info: 'bg-sky-500 hover:bg-sky-400 text-white border border-sky-400',
-        danger: 'bg-rose-500 hover:bg-rose-400 text-white border border-rose-400',
-        dark: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700',
+            'bg-gray-200 hover:bg-gray-100 text-gray-600 border-gray-400',
+        info: 'bg-sky-500 hover:bg-sky-400 text-white border-sky-400',
+        danger: 'bg-rose-500 hover:bg-rose-400 text-white border-rose-400',
+        dark: 'bg-gray-800 hover:bg-gray-700 text-white border-gray-700',
     };
 
-    const btnClass =
-        disabled || loading
-            ? `${btnSizeClass[size]} border bg-gray-200 border-gray-300 text-gray-400 opacity-90`
-            : `${btnSizeClass[size]} ${btnClrClass[color]} cursor-pointer`;
+    // const btnClass =
+    //     disabled || loading
+    //         ? `border bg-gray-200 border-gray-300 text-gray-400 opacity-90`
+    //         : `${btnClrClass[color]} cursor-pointer`;
 
     return (
         <button
             className={cn(
-                'flex items-center justify-center gap-x-1 rounded font-semibold shadow',
+                'flex cursor-pointer items-center justify-center gap-x-1 rounded border font-semibold hover:shadow disabled:pointer-events-none disabled:cursor-default disabled:border-gray-300 disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-90',
+                btnSizeClass[size],
+                btnClrClass[color],
                 className,
-                btnClass,
             )}
             onClick={onClick}
             disabled={disabled || loading}

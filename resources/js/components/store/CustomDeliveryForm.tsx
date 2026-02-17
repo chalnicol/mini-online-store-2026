@@ -1,9 +1,10 @@
 import type { CustomDeliveryTimeDetails } from '@/types/store';
 import { getTodayDateString } from '@/utils/DateUtils';
 import type React from 'react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import BaseModal from './BaseModal';
-import TextInput from './TextInput';
+import CustomButton from './CustomButton';
+import DateTimePicker from './DateTimePicker';
 
 interface CustomDeliveryFormModalProps {
     initialData: CustomDeliveryTimeDetails | null;
@@ -17,33 +18,43 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
     onSubmit,
 }) => {
     const [formData, setFormData] = useState<CustomDeliveryTimeDetails>({
-        date: initialData?.date || '',
-        time: initialData?.time || '',
+        date: initialData?.date || getTodayDateString(), // Default to today
+        time: initialData?.time || '10:00:00', // Default to start of ops
     });
     const [formErrors, setFormErrors] = useState<Record<string, string> | null>(
         null,
     );
-    const contRef = useRef<HTMLDivElement>(null);
 
     const today = getTodayDateString();
+
+    // Calculate max date (10 days from now)
+    const maxDateObj = new Date();
+    maxDateObj.setDate(maxDateObj.getDate() + 10);
+    const maxDate = maxDateObj.toISOString().split('T')[0]; // Result: "2026-02-27"
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setFormErrors(null);
 
+        // 1. Past Date Check
         if (formData.date < today) {
+            setFormErrors({ date: 'Please select today or a future date.' });
+            return;
+        }
+
+        // 2. 10-Day Window Check
+        if (formData.date > maxDate) {
             setFormErrors({
-                date: 'Please select a date that is today or in the future.',
+                date: `Deliveries can only be scheduled up to 10 days in advance (until ${maxDate}).`,
             });
             return;
         }
 
-        const selectedTime = formData.time; // Format is "HH:mm"
-
-        if (selectedTime < '10:00' || selectedTime > '18:00') {
-            // alert("Please select a time between 10:00 AM and 6:00 PM.");
+        // 3. Operating Hours Check
+        const selectedTime = formData.time;
+        if (selectedTime < '10:00:00' || selectedTime > '18:00:00') {
             setFormErrors({
-                time: 'Please select a time between 10:00 AM and 6:00 PM.',
+                time: 'Please pick a time between 10:00 AM and 6:00 PM.',
             });
             return;
         }
@@ -51,69 +62,86 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
         onSubmit(formData);
     };
 
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormErrors(null);
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value,
-        }));
-    };
-
     return (
         <BaseModal size="lg">
-            <div className="overflow-hidden rounded bg-white">
-                <p className="bg-sky-900 px-3 py-2 font-semibold text-white">
-                    Custom Delivery Form
+            <div className="overflow-visible rounded bg-white shadow-xl">
+                <p className="rounded-t bg-sky-900 px-3 py-2 font-bold text-white">
+                    Schedule Delivery
                 </p>
 
-                <div className="border-b border-sky-100 bg-sky-50 p-3">
-                    <p className="text-sm leading-relaxed text-sky-800">
-                        <strong>Note:</strong> Deliveries must be scheduled for
-                        today or future dates. Operating hours are strictly{' '}
-                        <strong>10:00 AM to 6:00 PM</strong>.
-                    </p>
+                <div className="flex items-start gap-2 border-b border-sky-100 bg-sky-50 px-4 py-2 text-xs">
+                    <ul className="list list-inside list-disc leading-relaxed text-sky-800">
+                        <li>
+                            Deliveries must be within
+                            <span className="mx-1 underline">10 days</span> of
+                            today.
+                        </li>
+                        <li>
+                            Operating hours:{' '}
+                            <span className="font-bold">
+                                10:00 AM – 6:00 PM
+                            </span>
+                            .
+                        </li>
+                    </ul>
                 </div>
 
-                <form className="space-y-2 p-3" onSubmit={handleSubmit}>
-                    {/* <PromptMessage errors={formErrors} /> */}
+                <form className="space-y-5 p-4" onSubmit={handleSubmit}>
+                    {/* DATE INPUT */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold tracking-wide text-slate-500">
+                            Delivery Date
+                        </label>
+                        <DateTimePicker
+                            value={formData.date}
+                            type="date"
+                            onChange={(val) =>
+                                setFormData((prev) => ({ ...prev, date: val }))
+                            }
+                        />
+                        {formErrors?.date && (
+                            <p className="mt-1 text-xs font-semibold text-rose-600">
+                                {formErrors.date}
+                            </p>
+                        )}
+                    </div>
 
-                    <TextInput
-                        label="Set Date"
-                        name="date"
-                        value={formData.date}
-                        min={today}
-                        onChange={handleFormChange}
-                        required
-                    />
-                    <TextInput
-                        label="Set Time"
-                        name="time"
-                        value={formData.time}
-                        min="10:00"
-                        max="18:00"
-                        onChange={handleFormChange}
-                        required
-                    />
+                    {/* TIME INPUT (Same as before) */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold tracking-wide text-slate-500">
+                            Preferred Time
+                        </label>
+                        <DateTimePicker
+                            value={formData.time}
+                            type="time"
+                            onChange={(val) =>
+                                setFormData((prev) => ({ ...prev, time: val }))
+                            }
+                        />
+                        {formErrors?.time && (
+                            <p className="mt-1 text-xs font-semibold text-rose-600">
+                                {formErrors.time}
+                            </p>
+                        )}
+                    </div>
 
-                    <div className="mt-4 space-x-1">
-                        <button
+                    {/* BUTTONS */}
+                    <div className="mt-6 flex gap-2">
+                        <CustomButton
                             type="button"
-                            className="cursor-pointer rounded border border-gray-400 bg-gray-200 px-3 py-0.5 font-semibold text-gray-600 hover:bg-gray-100"
+                            label="Cancel"
+                            color="secondary"
                             onClick={onClose}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="cursor-pointer rounded border bg-sky-900 px-3 py-0.5 font-semibold text-white hover:bg-sky-800"
-                        >
-                            Submit
-                        </button>
+                        />
+                        <CustomButton
+                            label="Confirm Schedule"
+                            color="primary"
+                        />
                     </div>
                 </form>
             </div>
         </BaseModal>
     );
 };
+
 export default CustomDeliveryFormModal;

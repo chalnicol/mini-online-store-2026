@@ -9,15 +9,12 @@ import BreadCrumbs from '@/components/store/BreadCrumbs';
 import ProductDetails from '@/components/store/ProductDetails';
 import CustomLayout from '@/layouts/app-custom-layout';
 import type { Product } from '@/types/store';
-import { usePage } from '@inertiajs/react';
 
 interface ProductDetailsPageProps {
     product: Product | null;
 }
 
 const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
-    const { auth } = usePage().props as any;
-
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
     // const { showCategoryList } = useFilterSearch()

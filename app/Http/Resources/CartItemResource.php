@@ -15,11 +15,11 @@ class CartItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id, // Unique ID for the cart row
-            'quantity' => $this->cart_quantity,
+            'id' => $this->product_variant_id, // Unique ID for the cart row
+            'quantity' => $this->quantity,
             // Reuse your existing variant resource for consistency!
-            'variant' => new ProductVariantResource($this),
-            'isChecked' => (bool) ($this->is_checked ?? true), // camelCase
+            'variant' => new ProductVariantResource($this->variant),
+            'isChecked' => (bool) ($this->checked ?? true), // camelCase
         ];
     }
 }

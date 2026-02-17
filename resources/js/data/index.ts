@@ -1,4 +1,8 @@
-import type { DeliveryTypeDetails, PaymentMethod } from '@/types/store';
+import type {
+    DeliveryType,
+    DeliveryTypeDetails,
+    PaymentMethod,
+} from '@/types/store';
 
 export const formRules: Record<string, string[]> = {
     firstName: ['Must be at least 2 characters long', 'Cannot contain numbers'],
@@ -13,7 +17,7 @@ export const formRules: Record<string, string[]> = {
     ],
     passwordConfirmation: ['Must match the password'],
     mobileNumber: ['Must be a valid mobile number'],
-    address: ['Must be at least 10 characters long'],
+    address: ['Must be a valid full address line'],
     contactPerson: ['Must be at least 2 characters long'],
     contactNumber: ['Must be a valid contact number'],
 };
@@ -25,38 +29,32 @@ export const paymentMethods: PaymentMethod[] = [
     { id: '4', name: 'Credit Card', type: 'cc' },
 ];
 
-export const deliveryTypes: DeliveryTypeDetails[] = [
-    {
-        id: 1,
+export const deliveryDataTypes: Record<DeliveryType, DeliveryTypeDetails> = {
+    standard: {
         name: 'Standard Delivery',
         price: 40,
-        type: 'standard',
         description:
             'FREE local delivery for orders above P300, otherwise P40. Join our scheduled runs at 9AM, 2PM, or 6PM.',
         dateSchedule: null,
         timeSchedule: null,
     },
-    {
-        id: 2,
+    express: {
         name: 'Express Delivery',
-        price: 60,
-        type: 'express',
+        price: 80,
         description:
             'Our fastest service. Direct delivery to your door within 30 minutes or less.',
         dateSchedule: null,
         timeSchedule: null,
     },
-    {
-        id: 3,
+    custom: {
         name: 'Custom Delivery',
         price: 60, // Suggested price point between Standard and Express
-        type: 'custom',
         description:
             'Book a specific day and time slot that fits your schedule.',
         dateSchedule: '',
         timeSchedule: [],
     },
-];
+};
 
 // export const notifications: Notification[] = [
 //     {

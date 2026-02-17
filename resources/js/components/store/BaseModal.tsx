@@ -21,11 +21,18 @@ const BaseModal: React.FC<BaseModalProps> = ({ children, size = 'md' }) => {
             gsap.fromTo(
                 modalRef.current,
                 { scale: 0 },
-                { scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.6)' },
+                {
+                    scale: 1,
+                    duration: 0.6,
+                    ease: 'elastic.out(1, 0.8)',
+                    overwrite: true,
+                },
             );
         }
         return () => {
-            gsap.killTweensOf(modalRef.current);
+            if (modalRef.current) {
+                gsap.killTweensOf(modalRef.current);
+            }
         };
     }, []);
 

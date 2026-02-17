@@ -165,17 +165,6 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
                     </CustomButton>
                 </>
             ) : (
-                // <div className="mb-3 flex min-h-42 flex-col items-center justify-center gap-y-2 rounded border border-gray-300 bg-gray-100 shadow">
-                //     <p className="text-lg font-semibold text-gray-400">
-                //         You have no addresses set yet.
-                //     </p>
-                //     <button
-                //         className="cursor-pointer rounded bg-sky-900 px-3 py-1 font-semibold text-white hover:bg-sky-800"
-                //         onClick={() => setShowForm(true)}
-                //     >
-                //         Add Address
-                //     </button>
-                // </div>
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                     <NotebookTabs size={64} className="mb-4 text-gray-300" />
                     <h2 className="text-2xl font-bold text-gray-800">

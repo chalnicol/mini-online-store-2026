@@ -11,6 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Spatie\Permission\Traits\HasPermissions;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 use App\Models\UserAddress;
 use App\Models\UserContact;
@@ -140,7 +141,13 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Automatically include this in the JSON/Inertia response.
+     * Get the vouchers assigned specifically to this user.
      */
+    public function vouchers(): BelongsToMany
+    {
+        return $this->belongsToMany(Voucher::class, 'user_voucher')
+                    ->withPivot('used_at')
+                    ->withTimestamps();
+    }
 
 }
