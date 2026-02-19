@@ -1,4 +1,3 @@
-import CustomLayout from '@/layouts/app-custom-layout';
 import ProfileLayout from '@/layouts/profile/layout';
 import { Star } from 'lucide-react';
 
@@ -22,10 +21,6 @@ const Reviews = () => {
     );
 };
 
-Reviews.layout = (page: React.ReactNode) => (
-    <CustomLayout>
-        <ProfileLayout children={page} />
-    </CustomLayout>
-);
+Reviews.layout = (page: React.ReactNode) => <ProfileLayout children={page} />;
 
 export default Reviews;

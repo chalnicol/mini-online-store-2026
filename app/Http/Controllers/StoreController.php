@@ -53,30 +53,6 @@ class StoreController extends Controller
             });
         }
 
-        // Best Price Calculation (Respecting is_active)
-        // $bestPrices = DB::table('product_variants')
-        //     ->select('product_variants.product_id')
-        //     ->where('product_variants.is_active', true) // <--- CRUCIAL: Don't sort by paused variants
-        //     ->selectRaw("
-        //         MIN(CASE 
-        //             WHEN discounts.id IS NOT NULL 
-        //                 AND discounts.is_active = 1 
-        //                 AND discounts.start_date <= ? 
-        //                 AND discounts.end_date >= ? 
-        //             THEN 
-        //                 CASE 
-        //                     WHEN discounts.type = 'percentage' 
-        //                         THEN (product_variants.price - (product_variants.price * (discounts.value / 100.0)))
-        //                     WHEN discounts.type = 'fixed' 
-        //                         THEN (product_variants.price - discounts.value)
-        //                     ELSE product_variants.price
-        //                 END
-        //             ELSE product_variants.price
-        //         END) as final_price
-        //     ", [$now, $now])
-        //     ->leftJoin('discount_product_variant', 'product_variants.id', '=', 'discount_product_variant.product_variant_id')
-        //     ->leftJoin('discounts', 'discount_product_variant.discount_id', '=', 'discounts.id')
-        //     ->groupBy('product_variants.product_id');
         $bestPrices = DB::table('product_variants')
             ->select('product_variants.product_id')
             ->leftJoin('discount_product_variant', 'product_variants.id', '=', 'discount_product_variant.product_variant_id')
@@ -125,18 +101,6 @@ class StoreController extends Controller
         ]);
     }
 
-    public function show($slug)
-    {
-        $product = Product::with(['category', 'variants.discounts', 'reviews.user', 'reviews.variant'])
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        // return new ProductResource($product);
-        return Inertia::render('shop/product-details', [
-            'product' => new ProductResource($product),
-        ]);
-
-    }
 
     /**
      * Extracted sorting logic to keep index() clean
@@ -184,4 +148,18 @@ class StoreController extends Controller
             default: $query->latest(); break;
         }
     }
+
+
+    public function show($slug)
+    {
+        $product = Product::with(['category', 'variants.discounts', 'reviews.user'])
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        // return new ProductResource($product);
+        return Inertia::render('shop/product-details', [
+            'product' => new ProductResource($product),
+        ]);
+    }
+
 }

@@ -21,6 +21,11 @@ const Navbar: React.FC = () => {
     // If you still need the user object for the profile dropdown/name:
     const user = auth.user as UserType | null;
 
+    const isAdmin =
+        user &&
+        user.roles &&
+        (user.roles.includes('admin') || user.roles.includes('manager'));
+
     // console.log('auth user', user);
     const { count: cartCount } = useCart();
 
@@ -284,6 +289,21 @@ const Navbar: React.FC = () => {
                                                         Profile
                                                     </Link>
                                                 </li>
+                                                {isAdmin && (
+                                                    <li>
+                                                        <Link
+                                                            href="/admin"
+                                                            className="block w-full p-1 hover:bg-gray-100"
+                                                            onClick={() =>
+                                                                setShowProfileMenu(
+                                                                    false,
+                                                                )
+                                                            }
+                                                        >
+                                                            Admin Dashboard
+                                                        </Link>
+                                                    </li>
+                                                )}
                                                 <li>
                                                     <button
                                                         className="block w-full cursor-pointer border-t border-gray-300 p-1 text-left hover:bg-gray-100"
@@ -388,6 +408,22 @@ const Navbar: React.FC = () => {
                                                 Profile
                                             </Link>
                                         </li>
+                                        {isAdmin && (
+                                            <li>
+                                                <Link
+                                                    href="/admin"
+                                                    className="block w-full border-t border-gray-300 px-3 py-2"
+                                                    onClick={() =>
+                                                        closeMenuAnimation(
+                                                            'hidden',
+                                                        )
+                                                    }
+                                                >
+                                                    Admin Dashboard
+                                                </Link>
+                                            </li>
+                                        )}
+
                                         <li>
                                             <button
                                                 className="block w-full border-y border-gray-300 px-3 py-2 text-left"

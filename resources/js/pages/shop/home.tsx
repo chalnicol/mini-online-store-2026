@@ -4,7 +4,7 @@ import { useFilterSearch } from '@/context/FilterSearchContext';
 import { useIntersectionObserver } from '@/hooks/use-intersection-observer';
 import CustomLayout from '@/layouts/app-custom-layout';
 import { PaginatedResponse, Product } from '@/types/store';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import React, { useEffect, useRef, useState } from 'react';
 
 interface HomeProps {
@@ -16,9 +16,9 @@ const Home = ({ data }: HomeProps) => {
 
     const {
         view,
-        isCategoryListOpen,
-        showCategoryList,
-        loadMore,
+        // isCategoryListOpen,
+        // showCategoryList,
+        // loadMore,
         isProcessing,
     } = useFilterSearch();
 
@@ -45,6 +45,20 @@ const Home = ({ data }: HomeProps) => {
         }
     }, [data.data, data.meta.current_page]);
 
+    const loadMore = () => {
+        const nextUrl = data.links.next;
+        if (nextUrl && !isProcessing) {
+            router.get(
+                nextUrl,
+                {},
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    only: ['data'],
+                },
+            );
+        }
+    };
     // Setup the Observer
     // It only triggers if there's a next page and we aren't already loading
     const hasMore = !!data.links.next;

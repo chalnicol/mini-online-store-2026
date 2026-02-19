@@ -26,7 +26,7 @@ class UserProfileSeeder extends Seeder
         $manager = User::create([
             'fname' => 'Store',
             'lname' => 'Manager',
-            'email' => 'manager@mystore.com',
+            'email' => 'manager@store.com',
             'password' => Hash::make('asdfasdf123'),
             'email_verified_at' => now(),
         ]);

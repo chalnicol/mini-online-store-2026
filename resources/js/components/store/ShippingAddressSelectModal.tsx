@@ -5,7 +5,7 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import AddressForm from './AddressForm';
 import BaseModal from './BaseModal';
-import CheckoutAddressCard from './CheckoutAddressCard';
+import AddressCard from './CheckoutAddressCard';
 
 interface ShippingAddressSelectModalProps {
     addresses: AddressDetails[];
@@ -128,7 +128,7 @@ const ShippingAddressSelectModal: React.FC<ShippingAddressSelectModalProps> = ({
                                                 }
                                             >
                                                 <div className="flex gap-x-3 px-2 py-2">
-                                                    <CheckoutAddressCard
+                                                    <AddressCard
                                                         address={address}
                                                         className="flex-1"
                                                     />

@@ -10,6 +10,7 @@ interface DropdownSelectProps {
     onSelect: (index: number) => void;
     className?: string;
     position?: 'top' | 'bottom';
+    highlightIndex?: number;
 }
 
 const DropdownSelect = ({
@@ -19,6 +20,7 @@ const DropdownSelect = ({
     onSelect,
     className,
     position = 'bottom',
+    highlightIndex,
 }: DropdownSelectProps) => {
     const [showOptions, setShowOptions] = useState(false);
     const contRef = useOutsideClick(() => setShowOptions(false));
@@ -65,7 +67,7 @@ const DropdownSelect = ({
                         positionClasses[position],
                     )}
                 >
-                    {options.map((option, i) => (
+                    {/* {options.map((option, i) => (
                         <button
                             key={i}
                             type="button"
@@ -74,6 +76,27 @@ const DropdownSelect = ({
                                 selected === i
                                     ? 'bg-sky-900 font-bold text-white'
                                     : 'text-slate-600 hover:bg-sky-50 hover:text-sky-900',
+                            )}
+                            onClick={() => {
+                                onSelect(i);
+                                setShowOptions(false);
+                            }}
+                        >
+                            {option}
+                        </button>
+                    ))} */}
+                    {options.map((option, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            className={cn(
+                                'rounded px-2 py-1 text-center text-xs transition-colors',
+                                // Selected state (Priority)
+                                selected === i
+                                    ? 'bg-sky-900 font-bold text-white'
+                                    : i === highlightIndex
+                                      ? 'bg-sky-100 font-semibold text-sky-900' // Highlight state
+                                      : 'text-slate-600 hover:bg-sky-50',
                             )}
                             onClick={() => {
                                 onSelect(i);

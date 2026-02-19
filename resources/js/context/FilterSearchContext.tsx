@@ -21,7 +21,7 @@ export interface FilterSearchContextType {
     changeView: (view: 'grid' | 'list') => void;
     resetAll: () => void;
     getBreadcrumbs: (id: number) => Category[];
-    loadMore: () => void;
+    // loadMore: () => void;
     expandedId: number | null;
     setExpanded: (id: number | null) => void;
 }
@@ -32,12 +32,15 @@ export const FilterSearchContext = React.createContext<
 
 export const FilterSearchProvider: React.FC<{
     children: React.ReactNode;
-    initialCategories: Category[];
-}> = ({ children, initialCategories }) => {
+}> = ({ children }) => {
     const { props } = usePage();
+
+    const initialCategories = (props?.categories as Category[]) || [];
 
     // Safely extract filters with defaults
     const serverFilters = (props?.filters as Record<string, string>) || {};
+
+    // console.log('server', serverFilters);
 
     const [searchTerm, setSearchTerm] = useState<string>(
         serverFilters.search || '',
@@ -248,6 +251,25 @@ export const FilterSearchProvider: React.FC<{
         );
     }, [selectedCategorySlug, flatCategories]);
 
+    const resetAll = () => {
+        isNavigatingManually.current = true; // Lock the useEffect
+        setSearchTerm('');
+        setSelectedCategorySlug(null);
+        setSortOrder('date-desc');
+        setExpandedId(null);
+
+        // Manually go where you want to go
+        router.get(
+            '/',
+            {},
+            {
+                onFinish: () => {
+                    isNavigatingManually.current = false;
+                },
+            },
+        );
+    };
+
     const value: FilterSearchContextType = {
         categories: initialCategories ?? [],
         expandedId,
@@ -267,41 +289,7 @@ export const FilterSearchProvider: React.FC<{
         showCategoryList: setIsCategoryListOpen,
         view,
         changeView: setView,
-        resetAll: () => {
-            // setSearchTerm('');
-            // setSelectedCategorySlug(null);
-            // setSortOrder('date-desc');
-            isNavigatingManually.current = true; // Lock the useEffect
-            setSearchTerm('');
-            setSelectedCategorySlug(null);
-            setSortOrder('date-desc');
-            setExpandedId(null);
-
-            // Manually go where you want to go
-            router.get(
-                '/',
-                {},
-                {
-                    onFinish: () => {
-                        isNavigatingManually.current = false;
-                    },
-                },
-            );
-        },
-        loadMore: () => {
-            const nextUrl = (props.data as any)?.links?.next;
-            if (nextUrl && !isProcessing) {
-                router.get(
-                    nextUrl,
-                    {},
-                    {
-                        preserveState: true,
-                        preserveScroll: true,
-                        only: ['data'],
-                    },
-                );
-            }
-        },
+        resetAll,
     };
 
     return (

@@ -5,7 +5,6 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 use App\Http\Controllers\StoreController;
-use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\OrderController;
@@ -14,10 +13,18 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\PurchaseLogController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ProductController;
 
 
 
 Route::get('/', [StoreController::class, 'index'])->name('home');
+
+Route::get('products/{slug}', [StoreController::class, 'show'])->name('product.show');
 
 // Shopping Cart Routes
 // 1. Static/Global Actions (Must be on top)
@@ -33,9 +40,9 @@ Route::patch('/cart/{id}/check', [CartController::class, 'updateCheck'])->name('
 Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
 
-Route::get('products/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
 
     //profile addresses..
@@ -73,7 +80,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('notifications.destroy');
 
 
-
     //checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
 
@@ -90,6 +96,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // For the actual claim action
     Route::post('/vouchers/{voucher}/claim', [VoucherController::class, 'claim'])->name('vouchers.claim');
 
+
+    /*
+     * Admin routes
+    */
+    Route::middleware(['role:admin|manager'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/users', [UserController::class, 'index'])->name('users');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+
+
+        Route::get('/products', [ProductController::class, 'index'])->name('products');
+
+
+        // Inventory & Stock (Our new engine)
+        //Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        //Route::post('/inventory/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
+        
+        // Purchase Logs (Restocking)
+        // Route::resource('purchase-logs', PurchaseLogController::class);
+        
+        // Products & Variants
+        // Route::resource('products', ProductController::class);
+    });
 
 });
 

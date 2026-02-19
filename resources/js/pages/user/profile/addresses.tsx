@@ -1,5 +1,4 @@
 import AddressList from '@/components/store/profile/AddressList';
-import CustomLayout from '@/layouts/app-custom-layout';
 import ProfileLayout from '@/layouts/profile/layout';
 import { AddressDetails } from '@/types/store';
 
@@ -11,10 +10,6 @@ const Addresses = ({ addresses }: AddressesProps) => {
     return <AddressList addresses={addresses} />;
 };
 
-Addresses.layout = (page: React.ReactNode) => (
-    <CustomLayout>
-        <ProfileLayout children={page} />
-    </CustomLayout>
-);
+Addresses.layout = (page: React.ReactNode) => <ProfileLayout children={page} />;
 
 export default Addresses;

@@ -17,42 +17,164 @@ use App\Models\Voucher;
 
 class CheckoutController extends Controller
 {
+    
+    // public function index(Request $request)
+    // {
+    //     $user = Auth::user();
+
+    //     // 1. Initialize Defaults if session is empty
+    //     if (!session()->has('checkout_settings')) {
+    //         session()->put('checkout_settings', [
+    //             'delivery_type' => 'standard',
+    //             'schedule' => null,
+    //             'voucher_id' => null
+    //         ]);
+    //     }
+
+    //     $checkout = session()->get('checkout_settings');
+
+    //     // 1. Get Base Data
+    //     $checkoutData = $this->getCheckoutData($request, $user);
+    //     $itemsSubtotal = $checkoutData['subtotal'];
+
+    //     // 2. Determine Shipping Fee
+    //     $deliveryType = $checkout['delivery_type'] ?? 'standard';
+    //     $voucherId = $checkout['voucher_id'] ?? null;
+    //     $shippingFee = $this->calculateShippingFee($deliveryType, $itemsSubtotal);
+
+    //     // 3. Handle Applied Voucher
+    //     $discount = 0;
+    //     $appliedVoucher = null;
+
+    //     if ($voucherId) {
+    //         $appliedVoucher = Voucher::find($voucherId);
+
+    //         // --- VALIDATION LOGIC ---
+    //         $isValid = true;
+    //         $removalReason = null;
+
+    //         // A. Check if voucher exists and meets min spend
+    //         if (!$appliedVoucher || $itemsSubtotal < $appliedVoucher->min_spend) {
+    //             $isValid = false;
+    //             $removalReason = "Minimum spend not met.";
+    //         }
+
+    //         // B. Check if shipping voucher is used with non-standard delivery
+    //         elseif ($appliedVoucher->type === 'shipping' && $deliveryType !== 'standard') {
+    //             $isValid = false;
+    //             $removalReason = "Shipping vouchers only apply to Standard Delivery.";
+    //         }
+
+    //         // C. Check if shipping voucher is even needed (Automatic Free Shipping check)
+    //         // If shipping is already 0, the voucher is invalid/unnecessary.
+    //         elseif ($appliedVoucher->type === 'shipping' && $shippingFee <= 0) {
+    //             $isValid = false;
+    //             $removalReason = "Automatic free shipping already applied.";
+    //         }
+
+    //         if ($isValid) {
+    //             // Calculate discount
+    //             $discount = ($appliedVoucher->type === 'shipping') 
+    //                 ? $shippingFee 
+    //                 : $appliedVoucher->calculateDiscount($itemsSubtotal);
+    //         } else {
+    //             // REMOVE VOUCHER FROM SESSION
+    //             $checkout = session()->get('checkout_settings', []);
+    //             unset($checkout['voucher_id']);
+    //             session()->put('checkout_settings', $checkout);
+                
+    //             $appliedVoucher = null;
+    //             $discount = 0;
+
+    //             // Flash the reason so the user isn't left guessing
+    //             if ($removalReason) {
+    //                 session()->flash('warning', $removalReason);
+    //             }
+    //         }
+    //     }
+
+    //     // 4. Calculate Final Total
+    //     $finalTotal = ($itemsSubtotal + $shippingFee) - $discount;
+
+    //     return Inertia::render('user/checkout', [
+    //         'cartItems' => CartItemResource::collection($checkoutData['items']),
+    //         'totalItemsCount' => (int) $checkoutData['count'],
+    //         'itemsSubtotal' => (float) $itemsSubtotal,
+            
+    //         'deliveryType' => $deliveryType,
+    //         'shippingFee' => (float) $shippingFee,
+    //         'discount' => (float) $discount,
+    //         'finalTotal' => (float) max(0, $finalTotal),
+            
+    //         'appliedVoucher' => $appliedVoucher ? new VoucherResource($appliedVoucher) : null,
+    //         'addresses' => UserAddressResource::collection($user->addresses()->latest()->get()),
+    //         'availableVouchers' => Inertia::lazy(fn() => 
+    //             $this->getEligibleVouchers($user, $itemsSubtotal)
+    //         ),
+    //     ]);
+    // }
+
     public function index(Request $request)
     {
         $user = Auth::user();
-        
-        // 1. Get Items and Subtotal using helper
+
+        // Default session if missing
+        if (!session()->has('checkout_settings')) {
+            session()->put('checkout_settings', [
+                'delivery_type' => 'standard',
+                'schedule' => null,
+                'voucher_id' => null
+            ]);
+        }
+
+        $checkout = session()->get('checkout_settings');
         $checkoutData = $this->getCheckoutData($request, $user);
         $itemsSubtotal = $checkoutData['subtotal'];
 
-        // 2. Handle Applied Voucher (Session)
+        // 1. Determine Shipping Fee
+        $deliveryType = $checkout['delivery_type'] ?? 'standard';
+        $shippingFee = $this->calculateShippingFee($deliveryType, $itemsSubtotal);
+
+        // 2. Handle Applied Voucher
         $discount = 0;
         $appliedVoucher = null;
-        if (session()->has('applied_voucher_id')) {
-            $appliedVoucher = Voucher::find(session('applied_voucher_id'));
-            if ($appliedVoucher && $itemsSubtotal >= $appliedVoucher->min_spend) {
-                $discount = $appliedVoucher->calculateDiscount($itemsSubtotal);
-            } else {
-                session()->forget('applied_voucher_id');
-                $appliedVoucher = null;
+
+        if (!empty($checkout['voucher_id'])) {
+            $voucher = Voucher::find($checkout['voucher_id']);
+            
+            // Simple logic check: Is it still valid?
+            if ($voucher && $itemsSubtotal >= $voucher->min_spend) {
+                
+                // Shipping vouchers only apply if it's Standard AND there's a fee
+                if ($voucher->type === 'shipping') {
+                    if ($deliveryType === 'standard' && $shippingFee > 0) {
+                        $appliedVoucher = $voucher;
+                        $discount = $shippingFee;
+                    }
+                } else {
+                    // Fixed or Percentage
+                    $appliedVoucher = $voucher;
+                    $discount = $voucher->calculateDiscount($itemsSubtotal);
+                }
             }
+            
+            // If it wasn't valid above, $appliedVoucher remains null 
+            // and $discount remains 0. No session unsetting here to avoid loops.
         }
+
+        $finalTotal = ($itemsSubtotal + $shippingFee) - $discount;
 
         return Inertia::render('user/checkout', [
             'cartItems' => CartItemResource::collection($checkoutData['items']),
             'totalItemsCount' => (int) $checkoutData['count'],
             'itemsSubtotal' => (float) $itemsSubtotal,
-            'initialShippingFee' => (float) ($itemsSubtotal >= 300 ? 0 : 40),
-            'addresses' => UserAddressResource::collection($user->addresses()->latest()->get()),
-            'checkoutSource' => $request->query('source', 'cart'),
-            'appliedVoucher' => $appliedVoucher,
+            'deliveryType' => $deliveryType,
+            'shippingFee' => (float) $shippingFee,
             'discount' => (float) $discount,
-            
-            // 3. The Voucher List (Lazy loaded for performance)
-            'availableVouchers' => Inertia::lazy(fn() => 
-                 $this->getEligibleVouchers($user, $itemsSubtotal)
-            ),
-            // 'availableVouchers' => $this->getEligibleVouchers($user, $itemsSubtotal),
+            'finalTotal' => (float) max(0, $finalTotal),
+            'appliedVoucher' => $appliedVoucher ? new VoucherResource($appliedVoucher) : null,
+            'addresses' => UserAddressResource::collection($user->addresses()->latest()->get()),
+            'availableVouchers' => Inertia::lazy(fn() => $this->getEligibleVouchers($user, $itemsSubtotal)),
         ]);
     }
 
@@ -64,58 +186,98 @@ class CheckoutController extends Controller
             'schedule_time' => 'required_if:delivery_type,custom',
         ]);
 
-        session()->put([
-            'delivery_type' => $request->delivery_type,
-            'delivery_schedule' => [
-                'date' => $request->schedule_date,
-                'time' => $request->schedule_time,
-            ]
-        ]);
+        $checkout = session()->get('checkout_settings', ['delivery_type' => 'standard']);
+        
+        // Auto-remove shipping voucher if switching to non-standard
+        if ($request->delivery_type !== 'standard' && !empty($checkout['voucher_id'])) {
+            $voucher = Voucher::find($checkout['voucher_id']);
+            if ($voucher && $voucher->type === 'shipping') {
+                unset($checkout['voucher_id']);
+                session()->flash('warning', 'Shipping voucher removed (Standard only).');
+            }
+        }
 
+        $checkout['delivery_type'] = $request->delivery_type;
+        $checkout['schedule'] = $request->delivery_type === 'custom' ? [
+            'date' => $request->schedule_date,
+            'time' => $request->schedule_time,
+        ] : null;
+
+        session()->put('checkout_settings', $checkout);
         return back();
     }
 
     public function applyVoucher(Request $request)
     {
-        $request->validate([
-            'voucher_id' => 'required|exists:vouchers,id',
-        ]);
+        $request->validate(['voucher_id' => 'required|exists:vouchers,id']);
 
         $user = Auth::user();
         $voucher = Voucher::findOrFail($request->voucher_id);
-        $subtotal = $this->calculateSubtotal($request);
+        
+        // Use the existing checkout data for subtotal
+        $checkoutData = $this->getCheckoutData($request, $user);
+        $subtotal = $checkoutData['subtotal'];
+        
+        $checkout = session()->get('checkout_settings', []);
+        $deliveryType = $checkout['delivery_type'] ?? 'standard';
 
-        // 1. Check Ownership & Claim if necessary
-        $hasVoucher = $user->vouchers()
-            ->where('voucher_id', $voucher->id)
-            ->wherePivot('used_at', null)
-            ->exists();
+        // 1. Minimum Spend
+        if ($subtotal < $voucher->min_spend) {
+            return back()->withErrors(['voucher' => "Minimum spend of ₱{$voucher->min_spend} required."]);
+        }
 
-        if (!$hasVoucher) {
-            // If it's a private voucher meant for someone else, block it
-            if ($voucher->user_id !== null && $voucher->user_id !== $user->id) {
-                return back()->withErrors(['voucher' => 'This voucher is not available for you.']);
+        // 2. Shipping Logic
+        if ($voucher->type === 'shipping') {
+            if ($deliveryType !== 'standard') {
+                return back()->withErrors(['voucher' => 'Shipping vouchers only apply to Standard Delivery.']);
             }
             
-            // AUTO-CLAIM: Attach it to their wallet now
-            $user->vouchers()->attach($voucher->id);
+            $fee = $this->calculateShippingFee($deliveryType, $subtotal);
+            if ($fee <= 0) {
+                return back()->withErrors(['voucher' => 'Free shipping is already applied to this order.']);
+            }
         }
 
-        // 2. Validate standard rules (Min Spend / Expiry)
+        // 3. Usage check
         if (!$voucher->isUsable($subtotal, $user->id)) {
-            return back()->withErrors(['voucher' => 'Requirement not met (e.g., minimum spend).']);
+            return back()->withErrors(['voucher' => 'This voucher is no longer valid.']);
         }
 
-        // 3. Save to Session
-        session()->put('applied_voucher_id', $voucher->id);
+        $checkout['voucher_id'] = $voucher->id;
+        session()->put('checkout_settings', $checkout);
 
         return back()->with('success', 'Voucher applied!');
     }
 
     public function removeVoucher()
-    {
-        session()->forget('applied_voucher_id');
+    {   
+        //
+        $checkout = session()->get('checkout_settings', []);
+
+        //
+        unset($checkout['voucher_id']);
+        
+        //
+        session()->put('checkout_settings', $checkout);
         return back()->with('success', 'Voucher removed');
+    }
+
+
+    /**
+     * Helper to calculate shipping based on type and subtotal
+     */
+    private function calculateShippingFee($type, $subtotal): float
+    {
+        // Example logic:
+        // Standard: $40, Free if over $300
+        // Express: $80 flat
+        // Custom: $60 flat (Priority delivery)
+        
+        return match ($type) {
+            'express' => 80.0,
+            'custom'  => 60.0,
+            default   => $subtotal >= 300 ? 0.0 : 40.0,
+        };
     }
 
     /**

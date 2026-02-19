@@ -108,29 +108,27 @@ const AddressList: React.FC<AddressListProps> = ({ addresses }) => {
                                 </div>
                                 <div className="flex-1 space-y-1.5 leading-tight">
                                     {/* default */}
-                                    {address.isDefault && (
-                                        <div className="mb-2 inline-block bg-sky-900 px-2 text-xs font-bold text-white">
-                                            Default
-                                        </div>
-                                    )}
 
                                     {/* full address */}
                                     <p className="text-sm font-semibold text-gray-800">
+                                        {address.isDefault && (
+                                            <span className="me-2 rounded bg-sky-900 px-2 text-xs font-bold text-white">
+                                                Default
+                                            </span>
+                                        )}
+
                                         {address.fullAddress}
                                     </p>
                                     {/* contact person */}
-                                    <div className="flex flex-wrap items-center gap-x-2">
-                                        <p className="font-bold text-sky-900">
-                                            {address.contactPerson}
-                                        </p>
-                                        <span className="rounded border border-gray-400 px-2 text-xs font-semibold text-sky-900 shadow">
-                                            {address.contactNumber}
-                                        </span>
+                                    <div className="space-x-1.5 text-sm font-bold text-slate-600">
+                                        <span>{address.contactPerson}</span>
+                                        <span>|</span>
+                                        <span>{address.contactNumber}</span>
                                     </div>
 
                                     {/* edit and delete */}
 
-                                    <div className="mt-4 flex space-x-1">
+                                    <div className="mt-4 flex items-center space-x-1.5">
                                         <CustomButton
                                             type="button"
                                             label="Edit"

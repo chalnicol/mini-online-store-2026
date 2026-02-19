@@ -4,6 +4,7 @@ import type {
     DeliveryTypeDetails,
 } from '@/types/store';
 import { formatShortDate, formatTo12Hour } from '@/utils/DateUtils';
+import { formatPrice } from '@/utils/PriceUtils';
 import gsap from 'gsap';
 import { Circle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -56,16 +57,15 @@ const DeliveryTypeCard: React.FC<DeliveryTypeCardProps> = ({
         <div
             className={`group relative flex flex-1 flex-col rounded border p-2 transition-all duration-200 ${
                 isSelected
-                    ? 'border-sky-900 bg-gray-50'
-                    : 'border-gray-400 bg-white hover:border-sky-900 hover:shadow-sm'
+                    ? 'border-sky-800 bg-gray-50'
+                    : 'border-gray-300 bg-white hover:border-sky-800 hover:shadow-sm'
             }`}
         >
             <button
                 type="button"
-                className={`relative flex flex-grow items-start text-left ${
-                    isSelected ? 'cursor-default' : 'cursor-pointer'
-                }`}
+                className="relative flex flex-grow cursor-pointer items-start text-left disabled:cursor-default"
                 onClick={() => onClick(t.type)}
+                disabled={isSelected}
             >
                 <div className="absolute top-1 right-1">
                     <Circle
@@ -77,7 +77,8 @@ const DeliveryTypeCard: React.FC<DeliveryTypeCardProps> = ({
                 <div className="flex w-full flex-col items-start pr-6">
                     <h4 className="font-bold text-gray-600">{t.name}</h4>
                     <p className="font-bold text-orange-800">
-                        ₱<span className="text-lg">{t.price}</span>.00
+                        {/* ₱<span className="text-lg">{t.price}</span>.00 */}
+                        {`${formatPrice(t.price)} ${t.type == 'standard' ? '/ FREE' : ''}`}
                     </p>
                     <p className="mt-1 text-sm leading-tight text-gray-500">
                         {t.description}

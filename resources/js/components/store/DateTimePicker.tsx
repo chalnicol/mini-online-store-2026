@@ -17,6 +17,8 @@ const DateTimePicker = ({
 }: DateTimePickerProps) => {
     const current = new Date();
     const currentYear = current.getFullYear();
+    const currentMonth = current.getMonth();
+    const currentDay = current.getDate();
 
     const months = [
         { name: 'January', short: 'Jan', days: 31 },
@@ -88,6 +90,9 @@ const DateTimePicker = ({
                         options={months.map((m) => m.short)}
                         selected={monthIdx}
                         onSelect={setMonthIdx}
+                        highlightIndex={
+                            year === currentYear ? currentMonth : undefined
+                        } // Highlight if current year
                         optionsView="grid"
                         position="top"
                         className="rounded-l border border-gray-400"
@@ -99,6 +104,11 @@ const DateTimePicker = ({
                         )}
                         selected={day - 1}
                         onSelect={(idx) => setDay(idx + 1)}
+                        highlightIndex={
+                            year === currentYear && monthIdx === currentMonth
+                                ? currentDay - 1
+                                : undefined
+                        } // Highlight if current month
                         optionsView="grid"
                         position="top"
                         className="border-y border-gray-400"
@@ -107,6 +117,7 @@ const DateTimePicker = ({
                         options={[currentYear, currentYear + 1]}
                         selected={year === currentYear ? 0 : 1}
                         onSelect={(idx) => setYear(currentYear + idx)}
+                        highlightIndex={0} // Highlight current year
                         optionsView="list"
                         position="top"
                         className="rounded-r border border-gray-400"

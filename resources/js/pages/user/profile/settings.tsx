@@ -1,7 +1,6 @@
 import DeleteAccount from '@/components/store/profile/DeleteAccount';
 import Details from '@/components/store/profile/Details';
 import UpdatePassword from '@/components/store/profile/UpdatePassword';
-import CustomLayout from '@/layouts/app-custom-layout';
 import ProfileLayout from '@/layouts/profile/layout';
 import { User } from '@/types/store';
 
@@ -29,10 +28,6 @@ const Settings = ({ user }: SettingsProps) => {
     );
 };
 
-Settings.layout = (page: React.ReactNode) => (
-    <CustomLayout>
-        <ProfileLayout children={page} />
-    </CustomLayout>
-);
+Settings.layout = (page: React.ReactNode) => <ProfileLayout children={page} />;
 
 export default Settings;

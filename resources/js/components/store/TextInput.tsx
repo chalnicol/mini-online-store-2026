@@ -21,11 +21,14 @@ const TextInput: React.FC<TextInputProps> = ({
     return (
         <div>
             {label && (
-                <p className="inline-block min-w-38 rounded-t bg-gray-300 px-2 py-1 text-xs font-bold text-gray-600">
+                // <p className="inline-block min-w-38 rounded-t bg-gray-300 px-2 py-1 text-xs font-bold text-gray-600">
+                //     {label}
+                // </p>
+                <span className="ms-0.5 text-[10px] font-medium tracking-widest text-zinc-600 uppercase">
                     {label}
-                </p>
+                </span>
             )}
-            <div className="relative -mt-0.5">
+            <div className="relative mt-0.5">
                 <input
                     {...props}
                     className={cn(

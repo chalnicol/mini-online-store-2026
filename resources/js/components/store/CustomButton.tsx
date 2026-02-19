@@ -50,7 +50,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     return (
         <button
             className={cn(
-                'flex cursor-pointer items-center justify-center gap-x-1 rounded border font-semibold hover:shadow disabled:pointer-events-none disabled:cursor-default disabled:border-gray-300 disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-90',
+                'flex cursor-pointer items-center justify-center gap-x-1 rounded border font-semibold transition-colors duration-300 ease-in-out hover:shadow disabled:pointer-events-none disabled:cursor-default disabled:border-gray-300 disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-90',
                 btnSizeClass[size],
                 btnClrClass[color],
                 className,

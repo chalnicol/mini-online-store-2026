@@ -21,17 +21,17 @@ class UserResource extends JsonResource
             // We only show the email if the user is viewing their own profile 
             // or if the person viewing is an Admin
             'email' => $this->when(
-                $request->user()?->hasRole('admin') || $request->user()?->id === $this->id, 
+                $request->user()?->hasAnyRole(['admin', 'manager']) || $request->user()?->id === $this->id, 
                 $this->email
             ),
             // We can conditionally show roles if the requester is an Admin
-            'roles' => $this->when($request->user()?->hasRole('admin'), function() {
+            'roles' => $this->when($request->user()?->hasAnyRole(['admin', 'manager']), function() {
                 return $this->getRoleNames();
             }),
             // This collection only appears if you Eager Load it in the Controller
             'addresses' => UserAddressResource::collection($this->whenLoaded('addresses')),
             'contacts' => UserContactResource::collection($this->whenLoaded('contacts')),
-            'memberSsince' => $this->created_at->format('M Y'),
+            'memberSince' => $this->created_at->format('F d,Y'),
             'isVerified' => $this->hasVerifiedEmail(),
             'isBlocked' => (bool) $this->is_blocked,
             //..

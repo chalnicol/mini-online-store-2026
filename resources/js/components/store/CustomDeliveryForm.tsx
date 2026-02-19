@@ -5,6 +5,7 @@ import { useState } from 'react';
 import BaseModal from './BaseModal';
 import CustomButton from './CustomButton';
 import DateTimePicker from './DateTimePicker';
+import PromptMessage from './PromptMessage';
 
 interface CustomDeliveryFormModalProps {
     initialData: CustomDeliveryTimeDetails | null;
@@ -36,21 +37,35 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
         e.preventDefault();
         setFormErrors(null);
 
-        // 1. Past Date Check
-        if (formData.date < today) {
-            setFormErrors({ date: 'Please select today or a future date.' });
-            return;
-        }
+        // 1. Calculate Boundary Dates
+        const todayStr = getTodayDateString();
 
-        // 2. 10-Day Window Check
-        if (formData.date > maxDate) {
+        const tomorrowObj = new Date();
+        tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+        const tomorrowStr = tomorrowObj.toISOString().split('T')[0];
+
+        const maxDateObj = new Date();
+        maxDateObj.setDate(maxDateObj.getDate() + 10);
+        const maxDateStr = maxDateObj.toISOString().split('T')[0];
+
+        // 2. Tomorrow and Onwards Check
+        // If date is today or earlier, show error
+        if (formData.date <= todayStr) {
             setFormErrors({
-                date: `Deliveries can only be scheduled up to 10 days in advance (until ${maxDate}).`,
+                date: 'Deliveries must be scheduled at least one day in advance.',
             });
             return;
         }
 
-        // 3. Operating Hours Check
+        // 3. 10-Day Window Check
+        if (formData.date > maxDateStr) {
+            setFormErrors({
+                date: `Deliveries can only be scheduled up to 10 days in advance (until ${maxDateStr}).`,
+            });
+            return;
+        }
+
+        // 4. Operating Hours Check
         const selectedTime = formData.time;
         if (selectedTime < '10:00:00' || selectedTime > '18:00:00') {
             setFormErrors({
@@ -63,28 +78,26 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
     };
 
     return (
-        <BaseModal size="lg">
+        <BaseModal size="sm">
             <div className="overflow-visible rounded bg-white shadow-xl">
                 <p className="rounded-t bg-sky-900 px-3 py-2 font-bold text-white">
                     Schedule Delivery
                 </p>
 
-                <div className="flex items-start gap-2 border-b border-sky-100 bg-sky-50 px-4 py-2 text-xs">
-                    <ul className="list list-inside list-disc leading-relaxed text-sky-800">
-                        <li>
-                            Deliveries must be within
-                            <span className="mx-1 underline">10 days</span> of
-                            today.
-                        </li>
-                        <li>
-                            Operating hours:{' '}
-                            <span className="font-bold">
-                                10:00 AM – 6:00 PM
-                            </span>
-                            .
-                        </li>
-                    </ul>
+                <div className="border-b border-sky-100 bg-sky-50 px-4 py-2 text-sm">
+                    <p>
+                        Deliveries must be within
+                        <span className="mx-1 font-bold">10 days</span> of
+                        today. Operating hours:{' '}
+                        <span className="font-bold">10:00 AM – 6:00 PM</span>.
+                    </p>
                 </div>
+
+                {formErrors && (
+                    <div className="mt-2 px-3">
+                        <PromptMessage type="error" errors={formErrors} />
+                    </div>
+                )}
 
                 <form className="space-y-5 p-4" onSubmit={handleSubmit}>
                     {/* DATE INPUT */}
@@ -99,11 +112,6 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
                                 setFormData((prev) => ({ ...prev, date: val }))
                             }
                         />
-                        {formErrors?.date && (
-                            <p className="mt-1 text-xs font-semibold text-rose-600">
-                                {formErrors.date}
-                            </p>
-                        )}
                     </div>
 
                     {/* TIME INPUT (Same as before) */}
@@ -118,11 +126,6 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({
                                 setFormData((prev) => ({ ...prev, time: val }))
                             }
                         />
-                        {formErrors?.time && (
-                            <p className="mt-1 text-xs font-semibold text-rose-600">
-                                {formErrors.time}
-                            </p>
-                        )}
                     </div>
 
                     {/* BUTTONS */}

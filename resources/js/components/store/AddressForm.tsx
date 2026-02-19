@@ -99,9 +99,9 @@ const AddressForm: React.FC<AddressFormProps> = ({
                             return (
                                 <button
                                     key={type}
-                                    className={`flex items-center justify-center gap-x-1 border border-gray-400 px-3 py-0.5 font-semibold ${isFirst ? 'rounded-l-full' : ''} ${isLast ? 'rounded-r-full' : ''} ${!isLast ? 'border-e-0' : ''} ${
+                                    className={`flex items-center justify-center gap-x-1 border border-gray-400 px-3 py-0.5 font-semibold ${isFirst ? 'rounded-l' : ''} ${isLast ? 'rounded-r' : ''} ${!isLast ? 'border-e-0' : ''} ${
                                         isActive
-                                            ? 'bg-gray-200 text-gray-800'
+                                            ? 'bg-gray-200 text-gray-700'
                                             : 'cursor-pointer bg-white shadow hover:bg-gray-100'
                                     }`}
                                     onClick={() =>

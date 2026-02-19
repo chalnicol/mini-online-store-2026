@@ -5,7 +5,8 @@ export interface User {
     fname: string;
     lname: string;
     email: string;
-    role: RoleType;
+    // role: RoleType;
+    roles?: string[];
     mobileNumber?: string;
     addresses?: AddressDetails[];
     isVerified: boolean;
@@ -262,6 +263,20 @@ export interface AppError {
     status?: number;
 }
 
+export interface Meta {
+    current_page: number;
+    from: number;
+    last_page: number;
+    total: number;
+    to: number;
+    per_page: number;
+    path: string;
+    links: {
+        url: string | null;
+        label: string;
+        active: boolean;
+    }[];
+}
 export interface PaginatedResponse<T> {
     data: T[];
     links: {
@@ -270,13 +285,9 @@ export interface PaginatedResponse<T> {
         prev: string | null;
         next: string | null;
     };
-    meta: {
-        current_page: number;
-        from: number;
-        last_page: number;
-        total: number;
-    };
+    meta: Meta;
 }
+
 export interface ResourceResponse<T> {
     data: T;
 }
@@ -285,4 +296,9 @@ export interface SelectOptionsType<T> {
     id: number;
     label: string;
     value: T;
+}
+
+export interface BreadcrumbItem {
+    title: string;
+    href?: string;
 }
