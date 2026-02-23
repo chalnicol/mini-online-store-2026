@@ -19,6 +19,10 @@ use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\PurchaseLogController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductVariantController;
+
+
 
 
 
@@ -41,7 +45,7 @@ Route::patch('/cart/{variant}', [CartController::class, 'update'])->name('cart.u
 Route::delete('/cart/{variant}', [CartController::class, 'destroy'])->name('cart.destroy');
 
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
 
@@ -105,10 +109,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/users', [UserController::class, 'index'])->name('users');
         Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
-
-
+        Route::patch('/users/{user}/toggle-block-status', [UserController::class, 'toggleBlockStatus'])
+            ->name('users.toggleBlockStatus');
+        
         Route::get('/products', [ProductController::class, 'index'])->name('products');
+        Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+        Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+        Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+        Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::patch('/products/{product}/toggle-published-status', [ProductController::class, 'togglePublishedStatus'])->name('products.togglePublishedStatus');
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
+        //product variants
+        Route::get('/products/{product}/create-variant', [ProductVariantController::class, 'create'])->name('variants.create');
+        
+        //..
+        Route::get('/products/variants/{variant}', [ProductVariantController::class, 'show'])->name('variants.show');
+        Route::get('/products/variants/{variant}/edit', [ProductVariantController::class, 'edit'])->name('variants.edit');
+        Route::post('/products/variants', [ProductVariantController::class, 'store'])->name('variants.store');
+        Route::put('/products/variants/{variant}', [ProductVariantController::class, 'update'])->name('variants.update');
+        Route::patch('/products/variants/{variant}/toggle-active-status', [ProductVariantController::class, 'toggleActiveStatus'])->name('variants.toggleActiveStatus');
+        Route::delete('/products/variants/{variant}', [ProductVariantController::class, 'destroy'])->name('variants.destroy');
+       
+        Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
+        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::patch('/categories/{category}/move', [CategoryController::class, 'move'])->name('categories.move');
+        Route::patch('/categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('categories.toggleStatus');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
         // Inventory & Stock (Our new engine)
         //Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');

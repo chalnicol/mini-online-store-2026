@@ -36,6 +36,7 @@ export interface Product {
     averageRating: number;
     reviewsCount?: number;
     variantsCount: number;
+    isPublished: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -59,7 +60,11 @@ export interface ProductVariant {
     isActive: boolean;
 
     productId: number;
-    product?: Product; // Parent product info
+    product?: {
+        name: string;
+        slug: string;
+        id: number;
+    }; // Parent product info
     discounts?: Discount[];
     reviews?: Review[]; // If you're eager loading reviews
 }
@@ -301,4 +306,9 @@ export interface SelectOptionsType<T> {
 export interface BreadcrumbItem {
     title: string;
     href?: string;
+}
+
+export interface OptionDetails {
+    label: string;
+    value: string | number | null;
 }

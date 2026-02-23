@@ -5,7 +5,33 @@ const AdminDashboard = () => {
     return (
         <>
             <TitleBar title="Admin Dashboard" className="mb-3" />
-            <p>This is the admin Dashboard</p>
+
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded border border-gray-400 p-2 shadow-md">
+                    <h2 className="text-lg font-bold">Title</h2>
+                    <p>This is a sample description.</p>
+                </div>
+                <div className="rounded border border-gray-400 p-2 shadow-md">
+                    <h2 className="text-lg font-bold">Title</h2>
+                    <p>This is a sample description.</p>
+                </div>
+                <div className="rounded border border-gray-400 p-2 shadow-md">
+                    <h2 className="text-lg font-bold">Title</h2>
+                    <p>This is a sample description.</p>
+                </div>
+                <div className="rounded border border-gray-400 p-2 shadow-md">
+                    <h2 className="text-lg font-bold">Title</h2>
+                    <p>This is a sample description.</p>
+                </div>
+                <div className="rounded border border-gray-400 p-2 shadow-md">
+                    <h2 className="text-lg font-bold">Title</h2>
+                    <p>This is a sample description.</p>
+                </div>
+                <div className="rounded border border-gray-400 p-2 shadow-md">
+                    <h2 className="text-lg font-bold">Title</h2>
+                    <p>This is a sample description.</p>
+                </div>
+            </div>
         </>
     );
 };

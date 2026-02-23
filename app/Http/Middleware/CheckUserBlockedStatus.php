@@ -16,15 +16,23 @@ class CheckUserBlockedStatus
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // return $next($request);
         if (Auth::check() && Auth::user()->isBlocked()) {
-            Auth::logout(); // Log them out
-            // $request->session()->invalidate();
-            // $request->session()->regenerateToken();
+            Auth::logout();
 
-            return response()->json([
-                'message' => 'Your account has been blocked. You have been logged out.'
-            ], 403); // 403 Forbidden
+            // Standard session clearing for security
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            // Check if it's an Inertia/Web request or an API request
+            // if ($request->expectsJson()) {
+            //     return response()->json([
+            //         'message' => 'Your account has been blocked.'
+            //     ], 403);
+            // }
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your account has been blocked. Please contact support.',
+            ]);
         }
 
         return $next($request);

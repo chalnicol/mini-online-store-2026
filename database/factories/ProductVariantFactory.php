@@ -4,6 +4,7 @@ namespace Database\Factories;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class ProductVariantFactory extends Factory
 {
@@ -14,7 +15,7 @@ class ProductVariantFactory extends Factory
         return [
             'sku' => strtoupper($this->faker->unique()->bothify('??-####-####')),
             'price' => $this->faker->randomFloat(2, 20, 500),
-            'compare_at_price' => $this->faker->optional(0.3)->randomFloat(2, 501, 700), // 30% chance of a "sale"
+            // 'compare_at_price' => $this->faker->optional(0.3)->randomFloat(2, 501, 700), // 30% chance of a "sale"
             'stock_qty' => $this->faker->numberBetween(0, 50),
             'product_id' => Product::factory(),
             'attributes' => [], // Default to empty array
@@ -61,9 +62,10 @@ class ProductVariantFactory extends Factory
                 'product_id' => $product->id,
                 'name' => $variantName,
                 'attributes' => $attr, // This will be cast to JSON automatically
-                'sku' => strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $product->name), 0, 3)) 
-                         . $this->faker->unique()->bothify('-####-####'),
+                'sku' => Str::upper(Str::limit(preg_replace('/[^A-Za-z0-9]/', '', $product->name), 3, ''))
+                    . $this->faker->unique()->bothify('-####-####'),
             ]);
+               
         }
     }
 }

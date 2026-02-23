@@ -1,4 +1,5 @@
 import { useCart } from '@/context/CartContext';
+import { getImageUrl } from '@/lib/utils';
 import type { Product, ProductVariant } from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -109,25 +110,21 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
         setQuantity(1);
     }, [activeVariant.id]);
 
-    const displayImage =
-        activeVariant.imagePath ||
-        'https://placehold.co/600x400?text=No+Image+Available';
-
     return (
         <>
             <div className="mt-4 mb-6 flex flex-col gap-x-4 gap-y-4 md:flex-row">
                 {/* Image Section */}
                 <div className="flex h-64 w-full flex-col md:h-auto md:max-w-xs lg:max-w-sm">
-                    <div className="w-full flex-1 overflow-hidden rounded border border-gray-300 bg-gray-100">
+                    <div className="aspect-[1.4] w-full overflow-hidden border border-gray-300 bg-gray-100">
                         <img
                             key={activeVariant.id}
-                            src={displayImage}
+                            src={getImageUrl(activeVariant.imagePath)}
                             alt={activeVariant.name}
                             className="h-full w-full animate-in object-contain duration-700 fade-in"
                         />
                     </div>
                     {!isSingleVariant && (
-                        <div className="flex w-full gap-x-1.5 overflow-x-auto px-1 py-2">
+                        <div className="flex w-full flex-shrink-0 flex-wrap items-center gap-x-1.5 overflow-x-auto px-1 py-2">
                             {variants.map((variant) => (
                                 <button
                                     key={variant.id}
@@ -141,12 +138,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                                     }
                                 >
                                     <img
-                                        src={
-                                            variant.imagePath ||
-                                            'https://placehold.co/600x400?text=No+Image+Available'
-                                        }
+                                        src={getImageUrl(variant.imagePath)}
                                         alt=""
-                                        className="h-full w-full object-cover"
+                                        className="h-full w-full object-contain"
                                     />
                                 </button>
                             ))}

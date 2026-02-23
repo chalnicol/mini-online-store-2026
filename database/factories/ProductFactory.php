@@ -36,6 +36,7 @@ class ProductFactory extends Factory
                 return $leafIds->random();
             },
             'average_rating' => $this->faker->randomFloat(1, 1, 5),
+            'is_published' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ];

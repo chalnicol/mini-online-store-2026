@@ -24,7 +24,6 @@ return new class extends Migration
             $table->json('attributes')->nullable(); 
 
             $table->decimal('price', 12, 2);
-            $table->decimal('compare_at_price', 12, 2)->nullable();
             
             $table->integer('stock_qty')->default(0);
             $table->string('image_path')->nullable(); 

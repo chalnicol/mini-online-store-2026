@@ -55,15 +55,16 @@ class HandleInertiaRequests extends Middleware
                 // We pass the total count here so the guest also sees a count
             ],
             'cartCount' => $cartCount, 
-            'categories' =>Cache::rememberForever('global_category_tree', function () {
+            // Wrapping in a function improves performance
+            'categories' => fn() => Cache::rememberForever('active_category_tree', function () {
                 $tree = Category::whereNull('parent_id')
-                    ->with('childrenRecursive')
+                    ->where('active', true) // <--- CRITICAL: Filter the roots too!
+                    ->with('activeChildrenRecursive')
                     ->orderBy('name', 'asc')
                     ->get();
 
                 return CategoryResource::collection($tree)->resolve();
             }),
-            
             // 'flash' => [
             //     'success' => $request->session()->get('success') ?? $request->session()->get('status'),
             //     'error' => $request->session()->get('error'),

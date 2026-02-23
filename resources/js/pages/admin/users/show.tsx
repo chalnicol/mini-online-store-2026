@@ -4,6 +4,7 @@ import AddressCard from '@/components/store/CheckoutAddressCard';
 import CustomButton from '@/components/store/CustomButton';
 import AdminLayout from '@/layouts/admin/layout';
 import { BreadcrumbItem, User } from '@/types/store';
+import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
 interface UserDetailsProps {
@@ -18,18 +19,33 @@ const UserDetails = ({ user }: UserDetailsProps) => {
         { title: `${user.fname} ${user.lname}` },
     ];
 
+    const handleToggleBlock = () => {
+        router.patch(
+            `/admin/users/${user.id}/toggle-block-status`,
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+                onBefore: () => setLoading(true),
+                onFinish: () => setLoading(false),
+            },
+        );
+    };
+
     return (
         <>
             <AdminBreadcrumbs items={breadcrumbItems} />
 
             <div className="mt-4">
-                <div className="flex items-center gap-x-2 border-b border-gray-400 py-1.5 text-gray-900">
-                    <p className="rounded border bg-sky-900 px-3 text-sm font-bold text-white md:text-base">
-                        {user.id}
+                <div className="flex items-center gap-x-2 border-b border-slate-400 pb-1 text-gray-900">
+                    <p className="flex items-center justify-center rounded border border-slate-300 bg-gray-200 px-2 text-sm font-bold tracking-widest text-gray-700">
+                        {user.id < 10 ? `0${user.id}` : user.id}
                     </p>
-                    <h2 className="font-bold lg:text-lg xl:text-xl">
+
+                    <p className="font-bold lg:text-lg xl:text-xl">
                         {user.fname} {user.lname}
-                    </h2>
+                    </p>
                 </div>
 
                 <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-6 px-3 md:grid-cols-2">
@@ -63,10 +79,11 @@ const UserDetails = ({ user }: UserDetailsProps) => {
                     <AdminDetailCard title="Account Status" className="">
                         <CustomButton
                             label={user.isBlocked ? 'UNBLOCK' : 'BLOCK'}
-                            color={user.isBlocked ? 'info' : 'danger'}
+                            color={user.isBlocked ? 'success' : 'danger'}
                             size="xs"
-                            onClick={() => {}}
+                            onClick={handleToggleBlock}
                             disabled={loading}
+                            loading={loading}
                             className="w-20"
                         />
                     </AdminDetailCard>

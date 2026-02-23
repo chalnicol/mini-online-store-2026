@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 // import { useParams } from "react-router-dom";
 import ProductCard from '@/components/store/ProductCard';
 import Rating from '@/components/store/Rating';
-import CommentCard from '@/components/store/ReviewCard';
 
 import TitleBar from '@/components/store//TitleBar';
 import BreadCrumbs from '@/components/store/BreadCrumbs';
 import ProductDetails from '@/components/store/ProductDetails';
+import ReviewCard from '@/components/store/ReviewCard';
 import CustomLayout from '@/layouts/app-custom-layout';
 import type { Product } from '@/types/store';
 
@@ -46,10 +46,9 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                     <TitleBar
                         title="Product Description"
                         className="mb-2"
-                        color="primary"
                         size="sm"
                     />
-                    <div className="min-h-16">
+                    <div className="min-h-16 px-2">
                         <p>{product.description}</p>
                     </div>
                 </div>
@@ -59,12 +58,11 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                     <TitleBar
                         title="Product Reviews"
                         className="mb-2"
-                        color="primary"
                         size="sm"
                     />
                     {/* rating	 */}
                     <div className="mb-3 flex">
-                        <div className="flex-none space-y-1 p-2">
+                        <div className="flex-none space-y-1 px-2 py-2">
                             <p className="font-bold">
                                 <span className="text-3xl">
                                     {product.averageRating}
@@ -82,7 +80,7 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                     <div>
                         {product.reviews.length > 0 ? (
                             product.reviews.map((review) => (
-                                <CommentCard key={review.id} review={review} />
+                                <ReviewCard key={review.id} review={review} />
                             ))
                         ) : (
                             <p>No reviews found.</p>
@@ -95,7 +93,6 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                     <TitleBar
                         title="Related Products"
                         className="mb-2"
-                        color="primary"
                         size="sm"
                     />
                     {relatedProducts.length > 0 ? (
@@ -114,7 +111,7 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                         // 		No related products found.
                         // 	</p>
                         // </div>
-                        <p className="min-h-20 py-1">
+                        <p className="min-h-20 px-2 py-1">
                             No related products found.
                         </p>
                     )}

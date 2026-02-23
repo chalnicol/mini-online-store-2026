@@ -21,6 +21,7 @@ class ProductResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'price' => (float) $this->price,
+            'isPublished' => $this->is_published,
             
             'category' => new CategoryResource($this->whenLoaded('category')),
             'categoryId' => $this->category_id,

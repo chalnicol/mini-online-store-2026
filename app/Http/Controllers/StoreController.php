@@ -30,8 +30,17 @@ class StoreController extends Controller
 
         // Category Filter
         if ($request->filled('category')) {
-            $category = Category::with('children')->where('slug', $request->category)->firstOrFail();
+            // Only find categories that are ACTIVE. 
+            // If deactivated or missing, firstOrFail() throws the 404 you want.
+            $category = Category::with('children')
+                ->where('slug', $request->category)
+                ->where('active', true) // <--- Strict check for active status
+                ->firstOrFail();
+
+            // Get the IDs for the category and all its active descendants
+            // Note: ensure getAllDescendantIds() only returns active children as well
             $categoryIds = collect($category->getAllDescendantIds())->push($category->id);
+            
             $query->whereIn('category_id', $categoryIds);
         }
 
@@ -101,6 +110,37 @@ class StoreController extends Controller
         ]);
     }
 
+    public function show($slug)
+    {
+        // $product = Product::with(['category', 'variants.discounts', 'reviews.user', 'reviews.variant'])
+        //     ->where('slug', $slug)
+        //     ->firstOrFail();
+        $product = Product::with([
+            'category',
+            
+            // 1. Only get active variants
+            'variants' => fn($q) => $q->where('is_active', true),
+            'variants.discounts',
+
+            // 2. Only get reviews where the associated variant is active
+            'reviews' => function ($query) {
+                $query->whereHas('variant', function ($q) {
+                    $q->where('is_active', true);
+                });
+            },
+            
+            'reviews.user',
+            'reviews.variant' // This will now only load active variants for these reviews
+        ])
+        ->where('slug', $slug)
+        ->where('is_published', true) // Best practice for a 'show' page
+        ->firstOrFail();
+
+        // return new ProductResource($product);
+        return Inertia::render('shop/product-details', [
+            'product' => new ProductResource($product),
+        ]);
+    }
 
     /**
      * Extracted sorting logic to keep index() clean
@@ -149,17 +189,5 @@ class StoreController extends Controller
         }
     }
 
-
-    public function show($slug)
-    {
-        $product = Product::with(['category', 'variants.discounts', 'reviews.user'])
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        // return new ProductResource($product);
-        return Inertia::render('shop/product-details', [
-            'product' => new ProductResource($product),
-        ]);
-    }
 
 }

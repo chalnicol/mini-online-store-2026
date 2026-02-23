@@ -13,6 +13,10 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
+use App\Models\User; // Ensure this is imported
+use Illuminate\Support\Facades\Hash; // Ensure this is imported
+use Illuminate\Validation\ValidationException; // Ensure this is imported
+// ...
 use Laravel\Fortify\Http\Responses\LoginResponse;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
@@ -34,6 +38,28 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+
+        // Custom Login Logic Override
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('email', $request->email)->first();
+
+            // 1. Verify credentials manually
+            if ($user && Hash::check($request->password, $user->password)) {
+                
+                // 2. Custom check: Is the user blocked?
+                if ($user->is_blocked) {
+                    throw ValidationException::withMessages([
+                        Fortify::username() => 'This account is blocked. Please contact an administrator.',
+                    ]);
+                }
+
+                // 3. If all is good, return the user to continue the login pipeline
+                return $user;
+            }
+
+            // Return null to trigger the default "These credentials do not match" error
+            return null; 
+        });
     }
 
     /**

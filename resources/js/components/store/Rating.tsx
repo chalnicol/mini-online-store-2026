@@ -35,7 +35,9 @@ const Rating: React.FC<RatingProps> = ({
     };
 
     const finalRating =
-        Math.floor(rating) === 0 && numReviews === 0 ? 5 : rating;
+        Math.floor(rating) === 0 && (numReviews === 0 || !numReviews)
+            ? 5
+            : rating;
 
     return (
         <div className={`flex flex-wrap items-center gap-2 ${className}`}>

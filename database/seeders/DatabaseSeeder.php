@@ -57,20 +57,31 @@ class DatabaseSeeder extends Seeder
 
             // Occasionally add a Discount
             if (rand(1, 10) > 7) {
+                // $discount = Discount::factory()->create();
+
+                // // Pick random variants to apply discount
+                // $countToSelect = rand(1, min(2, $variants->count()));
+                // $targetVariants = $variants->random($countToSelect);
+
+                // // Ensure we have a collection to loop over
+                // $targetVariants = ($targetVariants instanceof ProductVariant) 
+                //     ? collect([$targetVariants]) 
+                //     : $targetVariants;
+
+                // foreach ($targetVariants as $variant) {
+                //     $variant->discounts()->attach($discount->id);
+                // }
+                
+                // 1. Create the discount
                 $discount = Discount::factory()->create();
 
-                // Pick random variants to apply discount
-                $countToSelect = rand(1, min(2, $variants->count()));
-                $targetVariants = $variants->random($countToSelect);
+                // 2. Apply it to ALL variants of the current product
+                // We use the ID because attach() is highly efficient with arrays
+                $variantIds = $variants->pluck('id')->toArray();
 
-                // Ensure we have a collection to loop over
-                $targetVariants = ($targetVariants instanceof ProductVariant) 
-                    ? collect([$targetVariants]) 
-                    : $targetVariants;
-
-                foreach ($targetVariants as $variant) {
-                    $variant->discounts()->attach($discount->id);
-                }
+                // 3. Use attach() with the array of IDs
+                // This creates the link in the pivot table for every variant at once
+                $discount->variants()->attach($variantIds);
             }
         }
     }

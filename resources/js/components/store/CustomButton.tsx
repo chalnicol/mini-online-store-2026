@@ -1,7 +1,13 @@
 import { cn } from '@/lib/utils';
 import { Loader } from 'lucide-react';
 
-type ButtonColor = 'primary' | 'secondary' | 'info' | 'danger' | 'dark';
+type ButtonColor =
+    | 'primary'
+    | 'secondary'
+    | 'info'
+    | 'danger'
+    | 'success'
+    | 'dark';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -33,13 +39,22 @@ const CustomButton: React.FC<CustomButtonProps> = ({
         lg: 'px-3.5 py-1 text-lg',
     };
 
+    const spinnerSizeClass: Record<ButtonSize, number> = {
+        xs: 12,
+        sm: 14,
+        md: 16,
+        lg: 20,
+    };
+
     const btnClrClass: Record<ButtonColor, string> = {
         primary: 'bg-sky-900 hover:bg-sky-800 text-white border-sky-800',
         secondary:
             'bg-gray-200 hover:bg-gray-100 text-gray-600 border-gray-400',
         info: 'bg-sky-500 hover:bg-sky-400 text-white border-sky-400',
-        danger: 'bg-rose-500 hover:bg-rose-400 text-white border-rose-400',
+        danger: 'bg-rose-600 hover:bg-rose-500 text-white border-rose-500',
         dark: 'bg-gray-800 hover:bg-gray-700 text-white border-gray-700',
+        success:
+            'bg-emerald-500 hover:bg-emerald-400 text-white border-emerald-400',
     };
 
     // const btnClass =
@@ -59,9 +74,18 @@ const CustomButton: React.FC<CustomButtonProps> = ({
             disabled={disabled || loading}
             {...props}
         >
-            {loading && <Loader size={16} className="animate-spin" />}
+            {loading && (
+                <Loader
+                    size={spinnerSizeClass[size]}
+                    className="animate-spin"
+                />
+            )}
 
-            {children || label}
+            {children ? (
+                children
+            ) : (
+                <span className="whitespace-nowrap">{label}</span>
+            )}
         </button>
     );
 };

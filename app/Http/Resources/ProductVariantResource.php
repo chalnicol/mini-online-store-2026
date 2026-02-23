@@ -28,7 +28,7 @@ class ProductVariantResource extends JsonResource
             // Prices cast to float for JS math safety
             'price' => (float) $this->price,
             'calculatedPrice' => (float) $this->calculated_price, 
-            'compareAtPrice' => $this->compare_at_price ? (float) $this->compare_at_price : null,
+            // 'compareAtPrice' => $this->compare_at_price ? (float) $this->compare_at_price : null,
             
             'stockQty' => (int) $this->stock_qty,
             'isActive' => (bool) $this->is_active,
@@ -38,7 +38,12 @@ class ProductVariantResource extends JsonResource
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
             
             'productId' => $this->product_id,
-            'product' => new ProductResource($this->whenLoaded('product')),
+            // 'product' => new ProductResource($this->whenLoaded('product')),
+            'product' => [
+                'name' => $this->product->name ?? null,
+                'slug' => $this->product->slug ?? null,
+                'id' => $this->product->id ?? null,
+            ]
         ];
     }
 }

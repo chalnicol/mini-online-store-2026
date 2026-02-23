@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
+use App\Models\ProductVariant;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Review>
  */
@@ -28,17 +29,17 @@ class ReviewFactory extends Factory
         return [
             'rating' => $this->faker->numberBetween(3, 5),
             'comment' => $this->faker->randomElement($comments),
-            'user_id' => fn () => \App\Models\User::inRandomOrder()->first()?->id ?? \App\Models\User::factory(),
+            'user_id' => fn () => User::inRandomOrder()->first()?->id ?? \App\Models\User::factory(),
             
             // 1. Get a random variant first
             'product_variant_id' => function () {
-                return \App\Models\ProductVariant::inRandomOrder()->first()?->id 
-                    ?? \App\Models\ProductVariant::factory();
+                return ProductVariant::inRandomOrder()->first()?->id 
+                    ?? ProductVariant::factory();
             },
 
             // 2. Set the product_id based on that variant
             'product_id' => function (array $attributes) {
-                return \App\Models\ProductVariant::find($attributes['product_variant_id'])->product_id;
+                return ProductVariant::find($attributes['product_variant_id'])->product_id;
             },
 
             'created_at' => now(),

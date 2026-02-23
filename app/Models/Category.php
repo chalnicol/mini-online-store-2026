@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-namespace App\Models;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +13,7 @@ class Category extends Model
         'name',
         'slug',
         'parent_id'
+        
     ];
     
     // Get the parent (Upward)
@@ -29,6 +28,12 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id');
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'category_id');
+    }
+
+
     /**
      * The Infinite Recursive Relationship
      * This loads children, and their children, and so on...
@@ -37,9 +42,47 @@ class Category extends Model
     // {
     //     return $this->children()->with('childrenRecursive');
     // }
+    // public function childrenRecursive(): HasMany
+    // {
+    //     return $this->children()->with('childrenRecursive')->orderBy('name', 'asc');
+    // }
+
+    /**
+     * For the Frontend: Only active children
+     */
+    // public function activeChildrenRecursive(): HasMany
+    // {
+    //     return $this->children()
+    //         ->where('active', true)
+    //         ->with('activeChildrenRecursive') 
+    //         ->orderBy('name', 'asc');
+    // }
+
     public function childrenRecursive(): HasMany
     {
-        return $this->children()->with('childrenRecursive')->orderBy('name', 'asc');
+        return $this->children()
+            // 1. Count all children (including inactive ones)
+            ->withCount('children') 
+            // 2. Sort by the count (highest first)
+            ->orderBy('children_count', 'desc')
+            // 3. Fallback to alphabetical
+            ->orderBy('name', 'asc')
+            // 4. Recurse
+            ->with('childrenRecursive');
+    }
+
+    public function activeChildrenRecursive(): HasMany
+    {
+        return $this->children()
+            ->where('active', true)
+            // 1. Calculate how many children each child has
+            ->withCount('children') 
+            // 2. Sort by that count (highest first)
+            ->orderBy('children_count', 'desc')
+            // 3. Fallback to alphabetical if counts are equal
+            ->orderBy('name', 'asc')
+            // 4. Keep the recursion going
+            ->with('activeChildrenRecursive');
     }
 
     public function isLeaf(): bool
@@ -56,24 +99,26 @@ class Category extends Model
     // Clear cache automatically when categories change
     protected static function booted()
     {
-        static::saved(fn () => Cache::forget('global_category_tree'));
-        static::deleted(fn () => Cache::forget('global_category_tree'));
+        $clear = function () {
+            Cache::forget('active_category_tree');
+            // If you choose to cache the admin index, clear that too:
+            // Cache::forget('admin_category_tree'); 
+        };
+
+        static::saved(fn () => Cache::forget('active_category_tree'));
+        static::deleted(fn () => Cache::forget('active_category_tree'));
     }
 
     /**
      * Get all descendant IDs in a flat array.
      */
-    public function getAllDescendantIds(): array
+    public function getAllDescendantIds()
     {
         $ids = [];
-
-        // Loop through immediate children
-        foreach ($this->children as $child) {
+        foreach ($this->children()->where('active', true)->get() as $child) {
             $ids[] = $child->id;
-            // Recursively call this on each child
             $ids = array_merge($ids, $child->getAllDescendantIds());
         }
-
         return $ids;
     }
 }

@@ -107,12 +107,8 @@ export const FilterSearchProvider: React.FC<{
     }, []);
 
     // 3. URL SYNC
+    // 4. URL SYNC (Only for non-admin pages)
     useEffect(() => {
-        // 1. Exit if it's the initial load or a reset
-        // if (isFirstRender.current || isResetting.current) {
-        //     isFirstRender.current = false;
-        //     return;
-        // }
         if (
             isFirstRender.current ||
             isResetting.current ||
@@ -122,46 +118,34 @@ export const FilterSearchProvider: React.FC<{
             return;
         }
 
+        // BAIL OUT if on admin page to avoid conflicts
+        if (window.location.pathname.startsWith('/admin')) return;
+
         const params: Record<string, any> = {
             search: debouncedSearch,
             category: selectedCategorySlug,
             sort: sortOrder,
         };
 
-        // Use Object.keys to be safer than Object.entries if you're worried about types
         const cleanParams: Record<string, any> = {};
         Object.keys(params).forEach((key) => {
-            const val = (params as any)[key];
-            if (
-                val !== null &&
-                val !== undefined &&
-                val !== '' &&
-                val !== 'date-desc'
-            ) {
+            const val = params[key];
+            if (val && val !== '' && val !== 'date-desc') {
                 cleanParams[key] = val;
             }
         });
 
         const currentPath = window.location.pathname;
+        const productListPath = '/';
         const hasActiveFilters = Object.keys(cleanParams).length > 0;
 
-        // CHANGE: Identify your product listing path (e.g., '/')
-        const productListPath = '/';
+        if (!hasActiveFilters && currentPath !== productListPath) return;
 
-        // LOGIC:
-        // - If I have active filters, I should be on the product list page.
-        // - If I am on a subpage (like /pages/about) and I have NO filters, DO NOTHING.
-        if (!hasActiveFilters && currentPath !== productListPath) {
-            return;
-        }
-
-        // Determine destination
         const destination = hasActiveFilters ? productListPath : currentPath;
 
         router.get(destination, cleanParams, {
             preserveState: true,
             replace: true,
-            // Only use 'only' if we aren't changing pages
             ...(destination === currentPath
                 ? { only: ['data', 'filters'] }
                 : {}),

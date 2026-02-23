@@ -23,22 +23,22 @@ class ReviewResource extends JsonResource
             'createdAt' => $this->created_at->format('M d, Y'),
             'relativeTime' => $this->created_at->diffForHumans(),
 
-            // 1. Include User info only if it's loaded (useful for Product pages)
-            'user' => [
-                'name' => $this->user->fname . ' ' . $this->user->lname ?? 'Anonymous',
-                'avatar' => $this->user->profile_photo_url ?? null, // if you have one
-            ],
-            // 2. Include Product info only if it's loaded (Crucial for "My Reviews" page)
-            'product' => [
+            // Use optional() or null coalescing to prevent crashes if relationships aren't loaded
+            'user' => $this->relationLoaded('user') ? [
+                'name' => trim(($this->user->fname ?? '') . ' ' . ($this->user->lname ?? '')) ?: 'Anonymous',
+                'avatar' => $this->user->profile_photo_url ?? null,
+            ] : null,
+
+            'product' => $this->relationLoaded('product') ? [
                 'name' => $this->product->name ?? null,
                 'slug' => $this->product->slug ?? null,
-                'image' => $this->product->primary_image_url ?? null, // if you have one
-            ],
-            // 3. The specific variant purchased
-            'variant' => [
-                'name' => $this->product_variant->name ?? null,
-                'sku' => $this->product_variant->sku ?? null,
-            ],
+            ] : null,
+
+            'variant' => $this->relationLoaded('variant') ? [
+                // Check if variant actually exists in the DB for this review
+                'name' => $this->variant->name ?? null, 
+                'sku' => $this->variant->sku ?? null,
+            ] : null,
         ];
     }
 }

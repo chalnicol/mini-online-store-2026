@@ -1,9 +1,11 @@
 import AdminSearchBar from '@/components/store/admin/AdminSearchBar';
+import MenuOptions from '@/components/store/MenuOptions';
 import Pagination from '@/components/store/Pagination';
-import TitleBar from '@/components/store/TitleBar';
+import Rating from '@/components/store/Rating';
 import AdminLayout from '@/layouts/admin/layout';
-import type { PaginatedResponse, Product } from '@/types/store';
-import { Link } from '@inertiajs/react';
+import { cn } from '@/lib/utils';
+import type { OptionDetails, PaginatedResponse, Product } from '@/types/store';
+import { Link, router } from '@inertiajs/react';
 import { User2Icon } from 'lucide-react';
 
 interface ProductListingProps {
@@ -18,55 +20,70 @@ const ProductListing = ({ products, filters }: ProductListingProps) => {
 
     const breadcrumbItems = [{ title: 'Products' }];
 
+    const productsOptions: OptionDetails[] = [
+        { label: 'Create New Product', value: 'create' },
+    ];
+
+    const handleOptionsClick = (value: number | string | null) => {
+        if (value == 'create') {
+            router.visit('/admin/products/create');
+        }
+    };
+
     return (
         <>
             {/* <AdminBreadcrumbs items={breadcrumbItems} className="mb-1" /> */}
 
-            <TitleBar title="Products" className="mb-3" />
-
+            <div className="flex items-center justify-between border-b border-gray-400 py-1">
+                <h2 className="text-lg font-bold text-gray-900">Products</h2>
+                <MenuOptions
+                    pageOptions={productsOptions}
+                    onOptionsClick={handleOptionsClick}
+                />
+            </div>
             <AdminSearchBar
                 table="products"
                 filters={filters}
-                className="mb-3"
+                className="my-3 flex-1"
             />
 
             <div>
                 {items.length > 0 ? (
                     <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                         {items.map((item) => (
-                            <div
+                            <Link
                                 key={item.id}
-                                className="flex gap-2 rounded border border-gray-400 p-2 shadow"
+                                href={`/admin/products/${item.id}`}
+                                className="flex gap-2 rounded border border-gray-400 p-2 shadow hover:shadow-md"
                             >
-                                <div className="flex-1 space-y-1.5">
-                                    <p className="text-sm font-bold">
+                                <p className="flex min-w-10 flex-shrink-0 items-center justify-center rounded bg-gray-300 p-0.5 px-2 text-center text-xs font-bold tracking-widest text-gray-700">
+                                    {item.id < 10 ? `0${item.id}` : item.id}
+                                </p>
+                                <div className="flex-1 space-y-0.5">
+                                    <p className="text-sm font-bold text-slate-500">
                                         {item.name}
                                     </p>
-                                    <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-                                        Variants : {item.variantsCount}
-                                    </p>
-
-                                    {/* {item.variantsCount > 1 ? (
-                                        <div className="flex flex-wrap items-center gap-1">
-                                            {item.variants.map((variant) => (
-                                                <p className="rounded border border-gray-400 bg-gray-100 px-2 text-xs font-bold text-gray-600">
-                                                    {variant.name}
-                                                </p>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <span className="text-[10px] tracking-widest uppercase">
-                                            - single variant -
-                                        </span>
-                                    )} */}
+                                    <Rating
+                                        rating={item.averageRating}
+                                        size="sm"
+                                    />
                                 </div>
-                                <Link
-                                    href={`/admin/products/${item.id}`}
-                                    className="flex items-center rounded bg-sky-900 px-2 py-1 text-xs font-semibold text-white"
-                                >
-                                    VIEW
-                                </Link>
-                            </div>
+                                <div className="flex flex-none flex-col gap-1">
+                                    <p className="flex aspect-square items-center justify-center border-gray-300 bg-sky-900 px-1 text-[10px] font-bold tracking-wider text-white">
+                                        {item.variantsCount}
+                                    </p>
+                                    <p
+                                        className={cn(
+                                            'flex aspect-square items-center justify-center px-1 text-[10px] font-bold tracking-wider text-white',
+                                            item.isPublished
+                                                ? 'bg-emerald-500'
+                                                : 'bg-rose-500',
+                                        )}
+                                    >
+                                        P
+                                    </p>
+                                </div>
+                            </Link>
                         ))}
                     </div>
                 ) : (

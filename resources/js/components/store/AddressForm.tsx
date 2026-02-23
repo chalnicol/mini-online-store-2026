@@ -41,7 +41,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
     const mode = data ? 'edit' : 'add';
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         const baseOptions: any = {

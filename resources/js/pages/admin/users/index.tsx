@@ -1,7 +1,7 @@
 import AdminSearchBar from '@/components/store/admin/AdminSearchBar';
 import Pagination from '@/components/store/Pagination';
-import TitleBar from '@/components/store/TitleBar';
 import AdminLayout from '@/layouts/admin/layout';
+import { cn } from '@/lib/utils';
 import type { PaginatedResponse, User } from '@/types/store';
 import { Link } from '@inertiajs/react';
 import { User2Icon } from 'lucide-react';
@@ -22,33 +22,44 @@ const UserListing = ({ users, filters }: UserListingProps) => {
         <>
             {/* <AdminBreadcrumbs items={breadcrumbItems} className="mb-1" /> */}
 
-            <TitleBar title="Users" className="mb-3" />
+            <div className="flex items-center justify-between border-b border-gray-400 py-1">
+                <h2 className="text-lg font-bold text-gray-900">Users</h2>
+            </div>
 
-            <AdminSearchBar table="users" filters={filters} className="mb-3" />
+            <AdminSearchBar table="users" filters={filters} className="my-3" />
             <div>
                 {items.length > 0 ? (
                     <>
                         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                             {items.map((item) => (
-                                <div
+                                <Link
                                     key={item.id}
-                                    className="flex gap-2 rounded border border-gray-400 p-2 shadow"
+                                    href={`/admin/users/${item.id}`}
+                                    className="flex gap-2 rounded border border-gray-400 p-2 shadow hover:shadow-md"
                                 >
+                                    <p className="flex min-w-10 flex-shrink-0 items-center justify-center rounded bg-gray-300 p-0.5 px-2 text-center text-xs font-bold tracking-widest text-gray-700">
+                                        {item.id < 10 ? `0${item.id}` : item.id}
+                                    </p>
                                     <div className="flex-1">
-                                        <p className="text-sm font-bold">
-                                            {item.fname} {item.lname}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                            {item.email}
-                                        </p>
+                                        <div className="flex items-center gap-x-1.5 text-sm text-slate-500">
+                                            <p className="text-sm font-bold">
+                                                {item.fname} {item.lname}
+                                            </p>
+                                        </div>
+                                        <p className="text-xs">{item.email}</p>
                                     </div>
-                                    <Link
-                                        href={`/admin/users/${item.id}`}
-                                        className="flex items-center rounded bg-sky-900 px-2 py-1 text-xs font-semibold text-white"
-                                    >
-                                        VIEW
-                                    </Link>
-                                </div>
+
+                                    <div className="flex flex-none flex-col gap-1">
+                                        <p
+                                            className={cn(
+                                                'aspect-square h-2 rounded-full',
+                                                item.isBlocked
+                                                    ? 'bg-rose-500'
+                                                    : 'bg-green-600',
+                                            )}
+                                        ></p>
+                                    </div>
+                                </Link>
                             ))}
                         </div>
                         <Pagination meta={meta} type="advanced" />

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory; // 1. Import the trait
+// use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
@@ -30,6 +31,11 @@ class Product extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
+    }
+
+    public function activeVariants()
+    {
+        return $this->hasMany(Variant::class)->where('is_active', true);
     }
 
     public function reviews(): HasMany

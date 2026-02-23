@@ -1,6 +1,7 @@
 import type {
     DeliveryType,
     DeliveryTypeDetails,
+    NavItem,
     PaymentMethod,
 } from '@/types/store';
 
@@ -56,40 +57,34 @@ export const deliveryDataTypes: Record<DeliveryType, DeliveryTypeDetails> = {
     },
 };
 
-// export const notifications: Notification[] = [
-//     {
-//         id: 1,
-//         senderId: 1,
-//         senderName: 'Jane Doe',
-//         isRead: false,
-//         message: 'You are succesfully registered',
-//         type: 'info',
-//         url: '/profile',
-//         date: '2026/01/01',
-//     },
-//     {
-//         id: 2,
-//         senderId: 2,
-//         senderName: 'John Doe',
-//         isRead: false,
-//         message: 'This is some kind of notification',
-//         type: 'success',
-//         url: '/profile',
-//         date: '2026/01/01',
-//     },
-//     {
-//         id: 3,
-//         senderId: 1,
-//         senderName: 'Jane Doe',
-//         isRead: true,
-//         message: 'This is some kind of another notification',
-//         type: 'info',
-//         url: '/profile',
-//         date: '2025/01/01',
-//     },
-// ];
+export const adnminNavItems: NavItem[] = [
+    { id: 1, href: '/admin', label: 'Dashboard' },
+    { id: 2, href: '/admin/users', label: 'Users' },
+    { id: 3, href: '/admin/products', label: 'Products' },
+    { id: 6, href: '/admin/categories', label: 'Categories' },
+    { id: 10, href: '/admin/discounts', label: 'Discounts' },
+    { id: 9, href: '/admin/vouchers', label: 'Vouchers' },
+    { id: 4, href: '/admin/stocks', label: 'Stocks' },
+    { id: 5, href: '/admin/orders', label: 'Orders' },
+    { id: 8, href: '/admin/reviews', label: 'Reviews' },
+];
+
+export const profileNavItems: NavItem[] = [
+    { id: 1, href: '/profile', label: 'Settings' },
+    { id: 2, href: '/profile/addresses', label: 'Addresses' },
+    { id: 3, href: '/profile/orders', label: 'Orders' },
+    { id: 4, href: '/profile/reviews', label: 'Reviews' },
+];
 
 export const ADDRESS_TYPES = ['Home', 'Office', 'Other'] as const;
+
+export const AVAILABLE_ATTRIBUTE_KEYS = [
+    'Color',
+    'Size',
+    'Material',
+    'Style',
+    'Weight',
+];
 
 // This automatically creates the type from the array values!
 export type AddressDetailsType = (typeof ADDRESS_TYPES)[number];

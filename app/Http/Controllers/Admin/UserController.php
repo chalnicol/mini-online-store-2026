@@ -26,7 +26,9 @@ class UserController extends Controller
                     ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->latest()
+            // ->latest()
+            ->orderBy('updated_at','desc')
+            ->orderBy('id', 'desc')
             ->paginate(10)
             ->withQueryString();
 
@@ -45,5 +47,13 @@ class UserController extends Controller
         return Inertia::render('admin/users/show', [
             'user' => new UserResource($user->load('addresses'))
         ]);
+    }
+
+    public function toggleBlockStatus(User $user)
+    {
+        $user->is_blocked = !$user->is_blocked;
+        $user->save();
+        // $user->toggleBlockStatus();
+        return back();
     }
 }

@@ -31,31 +31,6 @@ const CategoryList: React.FC = () => {
 
     return (
         <div>
-            {/* <div className="mb-3 flex space-y-1 gap-x-1.5">
-                <input
-                    type="search"
-                    className="w-full rounded border border-gray-400 bg-white px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-sky-900"
-                    placeholder="Search categories"
-                    value={categorySearchedTerm}
-                    onChange={(e) => setCategorySearchTerm(e.target.value)}
-                />
-
-                <CustomButton
-                    label="Reset"
-                    size="sm"
-                    color="primary"
-                    onClick={resetAll}
-                    disabled={buttonDisabled}
-                    className="h-full flex-none py-1"
-                />
-            </div> */}
-
-            {/* {!hasResults && (
-                <div className="mb-2 rounded border border-gray-400 bg-sky-100 px-2 py-1.5 text-sm font-semibold text-gray-700 shadow">
-                    No categories match your search.
-                </div>
-            )} */}
-
             <div className="sticky top-12 z-40 mb-2 space-y-1 bg-white py-2.5">
                 <p className="text-xs font-semibold tracking-wider">
                     Selected:{' '}
@@ -73,25 +48,6 @@ const CategoryList: React.FC = () => {
                         className="py-1"
                     />
                 </div>
-                {/* <div className="inset-0 flex gap-x-1.5">
-                        <input
-                            type="search"
-                            className="w-full rounded border border-gray-400 bg-white px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-sky-900"
-                            placeholder="Search categories"
-                            value={categorySearchedTerm}
-                            onChange={(e) =>
-                                setCategorySearchTerm(e.target.value)
-                            }
-                        />
-                        <CustomButton
-                            label="Reset"
-                            size="sm"
-                            color="primary"
-                            onClick={resetAll}
-                            disabled={buttonDisabled}
-                            className="py-1"
-                        />
-                    </div> */}
             </div>
 
             <div className="space-y-1.5">
