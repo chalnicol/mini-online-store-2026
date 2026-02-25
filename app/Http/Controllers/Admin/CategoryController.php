@@ -70,6 +70,18 @@ class CategoryController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
+        // If the user is trying to create a subcategory...
+        if ($request->filled('parent_id')) {
+            $parent = Category::findOrFail($request->parent_id);
+
+            // CHECK: Does this parent already have products?
+            if ($parent->products()->exists()) {
+                return back()->withErrors([
+                    'parent_id' => "Cannot add subcategories to '{$parent->name}' because it already has products directly assigned to it. Move the products first."
+                ]);
+            }
+        }
+
         $category = Category::create([
             'name' => ucwords($request->name),
             'slug' => $slug,

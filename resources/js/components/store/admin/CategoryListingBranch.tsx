@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Category, OptionDetails } from '@/types/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import CustomButton from '../CustomButton';
-import CategoryForm from './CategoryForm';
+import CategoryForm from './forms/CategoryForm';
 
 const CategoryListingBranch = ({ category }: { category: Category }) => {
     const {
@@ -150,7 +150,9 @@ const CategoryListingBranch = ({ category }: { category: Category }) => {
                 </p>
 
                 <div className="flex items-center gap-x-2 border-t border-gray-300 pt-1.5 sm:border-0 sm:pt-0">
-                    <p className="text-sm font-semibold">Confirm delete?</p>
+                    <p className="text-sm font-semibold text-rose-400">
+                        Confirm delete?
+                    </p>
 
                     <div className="flex items-center gap-x-1.5">
                         <CustomButton

@@ -7,7 +7,7 @@ import PromptMessage from '@/components/store/PromptMessage';
 import Rating from '@/components/store/Rating';
 import { useOutsideClick } from '@/hooks/user-outside-click';
 import AdminLayout from '@/layouts/admin/layout';
-import { cn } from '@/lib/utils';
+import { cn, getImageUrl } from '@/lib/utils';
 import {
     BreadcrumbItem,
     OptionDetails,
@@ -113,10 +113,6 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
             <div className="mt-4">
                 <div className="flex items-center gap-x-2 border-b border-slate-400 py-1.5 text-gray-900">
-                    <p className="flex items-center justify-center rounded border border-slate-300 bg-gray-200 px-2 text-sm font-bold tracking-widest text-gray-700">
-                        {product.id < 10 ? `0${product.id}` : product.id}
-                    </p>
-
                     <p className="font-bold lg:text-lg xl:text-xl">
                         {product.name}
                     </p>
@@ -136,7 +132,13 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                     />
                 )}
 
-                <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-6 px-3 md:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-6 px-3 md:grid-cols-2">
+                    <AdminDetailCard title="ID">
+                        <p className="text-slate-00 text-sm font-semibold tracking-wider uppercase">
+                            {product.id < 10 ? `0${product.id}` : product.id}
+                        </p>
+                    </AdminDetailCard>
+
                     <AdminDetailCard title="Category">
                         <p className="text-slate-00 text-sm font-semibold tracking-wider uppercase">
                             {product.category.name}
@@ -166,7 +168,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
                     <AdminDetailCard
                         title="Description"
-                        className="md:col-span-2 lg:col-span-3"
+                        className="md:col-span-2"
                     >
                         <p className="text-sm font-semibold">
                             {product.description || 'No description'}
@@ -174,50 +176,59 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                     </AdminDetailCard>
 
                     {/* variants */}
-                    <AdminDetailCard
-                        title="Variants"
-                        className="md:col-span-2 lg:col-span-3"
-                    >
+                    <AdminDetailCard title="Variants" className="md:col-span-2">
                         {product.variants && product.variants.length > 0 ? (
-                            <div className="mb-1 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            <div className="mb-1 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                 {product.variants.map((variant) => (
                                     <Link
                                         href={`/admin/products/variants/${variant.id}`}
                                         key={variant.id}
-                                        className="flex cursor-pointer items-start gap-x-2 rounded border border-gray-400 px-2 py-1.5 text-gray-600 hover:shadow"
+                                        className="cursor-pointer overflow-hidden rounded border border-gray-400 shadow hover:shadow-md"
                                     >
-                                        <div className="flex gap-x-2">
-                                            <p className="flex min-w-10 flex-shrink-0 items-center justify-center rounded bg-gray-300 p-0.5 px-2 text-center text-xs font-bold tracking-widest text-gray-700">
-                                                {variant.id < 10
-                                                    ? `0${variant.id}`
-                                                    : variant.id}
-                                            </p>
-                                            <div className="flex flex-1 flex-col items-start">
-                                                <p className="text-sm font-bold">
-                                                    {variant.name}
-                                                </p>
-                                                <p className="space-x-1 text-xs font-semibold text-sky-700">
-                                                    <span className="text-green-700">
-                                                        {formatPrice(
-                                                            variant.calculatedPrice,
-                                                        )}
-                                                    </span>
-                                                    <span>&bull;</span>
-                                                    <span className="text-sky-900">
-                                                        {variant.stockQty} in
-                                                        stock
-                                                    </span>
-                                                </p>
+                                        <div className="flex items-start px-2 py-1.5 text-gray-600">
+                                            <div className="flex gap-x-2">
+                                                <img
+                                                    src={getImageUrl(
+                                                        variant.imagePath,
+                                                    )}
+                                                    alt=""
+                                                    className="aspect-square w-9 rounded object-cover"
+                                                />
+
+                                                <div className="flex flex-1 flex-col items-start">
+                                                    <p className="text-sm font-bold">
+                                                        {variant.name}
+                                                    </p>
+                                                    <p className="space-x-1 text-xs font-semibold text-sky-700">
+                                                        <span className="text-green-700">
+                                                            {formatPrice(
+                                                                variant.calculatedPrice,
+                                                            )}
+                                                        </span>
+                                                        <span>&bull;</span>
+                                                        <span className="text-sky-900">
+                                                            {variant.stockQty}{' '}
+                                                            in stock
+                                                        </span>
+                                                        <span>&bull;</span>
+                                                    </p>
+                                                </div>
                                             </div>
+                                            <p
+                                                className={cn(
+                                                    'ms-auto aspect-square w-2 rounded-full',
+                                                    variant.isActive
+                                                        ? 'bg-emerald-500'
+                                                        : 'bg-rose-500',
+                                                )}
+                                            ></p>
                                         </div>
-                                        <p
-                                            className={cn(
-                                                'ms-auto aspect-square w-2 rounded-full',
-                                                variant.isActive
-                                                    ? 'bg-emerald-500'
-                                                    : 'bg-rose-500',
-                                            )}
-                                        ></p>
+                                        <div className="border-t border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-gray-600">
+                                            ID:
+                                            {variant.id < 10
+                                                ? `0${variant.id}`
+                                                : variant.id}
+                                        </div>
                                     </Link>
                                 ))}
                             </div>

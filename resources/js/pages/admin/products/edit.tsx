@@ -1,5 +1,5 @@
 import AdminBreadcrumbs from '@/components/store/admin/AdminBreadcrumbs';
-import ProductForm from '@/components/store/ProductForm';
+import ProductForm from '@/components/store/admin/forms/ProductForm';
 import AdminLayout from '@/layouts/admin/layout';
 import { BreadcrumbItem, Product } from '@/types/store';
 

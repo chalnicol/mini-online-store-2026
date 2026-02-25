@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { useEffect, useRef, useState } from 'react';
-import CustomButton from '../CustomButton';
+import CustomButton from '../../CustomButton';
 
 const CategoryForm = ({
     categoryName,

@@ -43,7 +43,9 @@ class ProductVariantResource extends JsonResource
                 'name' => $this->product->name ?? null,
                 'slug' => $this->product->slug ?? null,
                 'id' => $this->product->id ?? null,
-            ]
+            ],
+            'reviewsCount' => (int) ($this->reviews_count ?? 0),
+
         ];
     }
 }

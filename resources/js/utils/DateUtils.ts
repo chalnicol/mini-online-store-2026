@@ -39,6 +39,26 @@ export const formatShortDate = (dateStr: string): string => {
     }).format(date);
 };
 
+export const sanitizeDateForInput = (dateString: string | null | undefined) => {
+    if (!dateString) return '';
+
+    // This takes "2026-02-24T..." and turns it into ["2026-02-24", "..."]
+    // then grabs the first part.
+    return dateString.split('T')[0];
+};
+
+export const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'long', // "February"
+        day: '2-digit', // "24"
+        year: 'numeric', // "2026"
+    }).format(date);
+};
+
 const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
 export const getRelativeTime = (dateString: string) => {

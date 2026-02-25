@@ -67,6 +67,7 @@ export interface ProductVariant {
     }; // Parent product info
     discounts?: Discount[];
     reviews?: Review[]; // If you're eager loading reviews
+    reviewsCount?: number;
 }
 
 export interface CheckoutItem {
@@ -86,11 +87,12 @@ export interface Discount {
     code?: string;
     description?: string;
     type: DiscountType;
-    value: number;
-    startData: string;
+    value: string | number;
+    startDate: string;
     endDate: string;
     isActive: boolean;
     variants?: ProductVariant[];
+    variantsCount: number;
 }
 
 export type NotificationType = 'verification' | 'order';
@@ -132,9 +134,11 @@ export interface Review {
         name: string;
         sku: string;
     };
+    isPublished: boolean;
     relativeTime: string;
     createdAt: string;
     updatedAt: string;
+    isUpdated: boolean;
     // ratingCount: number;
 }
 

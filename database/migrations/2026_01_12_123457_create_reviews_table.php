@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->integer('rating')->unsigned(); // 1 to 5
             $table->text('comment')->nullable();
+            $table->boolean('is_published')->default(true);
             $table->timestamps();
         });
     }

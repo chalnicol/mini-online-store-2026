@@ -17,7 +17,7 @@ class ProductController extends Controller
     {
         
         $products = Product::query()
-            ->with(['variants.reviews',])
+            ->with(['variants',])
             // Use 'where' inside a closure if you plan to search multiple columns later
             ->when($request->search, function ($query, $search) {
                 // Grouping the OR conditions inside a nested closure
@@ -68,7 +68,7 @@ class ProductController extends Controller
     {
         
         return Inertia::render('admin/products/show', [
-            'product' => new ProductResource($product->load(['variants', 'reviews.user', 'category',])),
+            'product' => new ProductResource($product->load(['variants', 'publishedReviews.user', 'category',])),
         ]);
     }
 

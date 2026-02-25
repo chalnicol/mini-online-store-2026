@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 use App\Http\Resources\ProductVariantResource;
+use App\Http\Resources\ReviewResource;
 
 use App\Models\ProductVariant;
 use App\Models\Product;
@@ -33,10 +34,15 @@ class ProductVariantController extends Controller
 
     public function show(ProductVariant $variant) 
     {   
+        $reviews = $variant->publishedReviews()
+                ->with('user')
+                ->latest()
+                ->paginate(5) // Just show 5 per page
+                ->withQueryString();
 
         return Inertia::render('admin/variants/show', [
-           
-            'variant' => new ProductVariantResource($variant->load(['discounts', 'reviews.user'])),
+            'variant' => new ProductVariantResource($variant->load(['discounts'])),
+            'reviews' => ReviewResource::collection($reviews),
         ]);
     }
 
@@ -48,25 +54,92 @@ class ProductVariantController extends Controller
         ]);
     }
 
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'product_id' => 'required|exists:products,id',
+    //         'name'       => 'required|string|max:255',
+    //         'attributes' => 'required|array',
+    //         'image'      => 'nullable|image|max:2048',
+    //         'is_active'  => 'boolean',
+    //     ]);
+
+    //     $product = Product::with('variants')->findOrFail($validated['product_id']);
+
+    //     // 1. Clean Attributes
+    //     $cleanAttributes = array_filter($validated['attributes'], function ($v, $k) {
+    //         return !empty(trim($k)) && !empty(trim($v));
+    //     }, ARRAY_FILTER_USE_BOTH);
+
+    //     if (empty($cleanAttributes)) {
+    //         return back()->withErrors(['attributes' => 'At least one attribute is required.'])->withInput();
+    //     }
+
+    //     // 2. Uniqueness Check
+    //     if ($product->variants()->where('name', $validated['name'])->exists()) {
+    //         return back()->withErrors(['name' => 'A variant with this name already exists.'])->withInput();
+    //     }
+
+    //     // 3. Consistency Check (Only if other variants exist)
+    //     $firstVariant = $product->variants->first();
+    //     if ($firstVariant) {
+    //         $requiredKeys = array_keys($firstVariant->attributes);
+    //         $incomingKeys = array_keys($cleanAttributes);
+    //         sort($requiredKeys);
+    //         sort($incomingKeys);
+
+    //         if ($requiredKeys !== $incomingKeys) {
+    //             return back()->withErrors(['attributes' => 'Keys must match: ' . implode(', ', $requiredKeys)])->withInput();
+    //         }
+    //     }
+
+    //     // 4. Create the Variant (No more forcing is_active to true)
+    //     $variant = new ProductVariant();
+    //     $variant->product_id = $product->id;
+    //     $variant->name        = $validated['name'];
+    //     $variant->attributes  = $cleanAttributes;
+    //     $variant->is_active   = $validated['is_active'] ?? false; // Default to false if not provided
+    //     $variant->price       = 0;
+    //     $variant->stock_qty   = 0;
+
+    //     if ($request->hasFile('image')) {
+    //         $variant->image_path = $this->uploadAndGetName($request->file('image'), $product, $variant->name);
+    //     }
+
+    //     $variant->save();
+
+    //     // 5. Automatic Product Sync: 
+    //     // If the product was published but now has NO active variants, unpublish it.
+    //     $activeCount = $product->variants()->where('is_active', true)->count();
+        
+    //     if ($activeCount === 0 && $product->is_published) {
+    //         $product->update(['is_published' => false]);
+    //         $statusMsg = 'Variant created. Product unpublished because it has no active variants.';
+    //     } else {
+    //         $statusMsg = 'Variant created successfully.';
+    //     }
+
+    //     return to_route('admin.products.show', $product->id)->with('success', $statusMsg);
+    // }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'name'       => 'required|string|max:255',
-            'attributes' => 'required|array',
+            'attributes' => 'nullable|array', // Changed from required to nullable
             'image'      => 'nullable|image|max:2048',
             'is_active'  => 'boolean',
         ]);
 
         $product = Product::with('variants')->findOrFail($validated['product_id']);
 
-        // 1. Clean Attributes
-        $cleanAttributes = array_filter($validated['attributes'], function ($v, $k) {
-            return !empty(trim($k)) && !empty(trim($v));
-        }, ARRAY_FILTER_USE_BOTH);
-
-        if (empty($cleanAttributes)) {
-            return back()->withErrors(['attributes' => 'At least one attribute is required.'])->withInput();
+        // Clean Attributes
+        $cleanAttributes = [];
+        if (!empty($validated['attributes'])) {
+            $cleanAttributes = array_filter($validated['attributes'], function ($v, $k) {
+                return !empty(trim((string)$k)) && !empty(trim((string)$v));
+            }, ARRAY_FILTER_USE_BOTH);
         }
 
         // 2. Uniqueness Check
@@ -74,9 +147,9 @@ class ProductVariantController extends Controller
             return back()->withErrors(['name' => 'A variant with this name already exists.'])->withInput();
         }
 
-        // 3. Consistency Check (Only if other variants exist)
+        // 3. Consistency Check (Only if other variants exist and have attributes)
         $firstVariant = $product->variants->first();
-        if ($firstVariant) {
+        if ($firstVariant && !is_null($firstVariant->attributes) && !is_null($cleanAttributes)) {
             $requiredKeys = array_keys($firstVariant->attributes);
             $incomingKeys = array_keys($cleanAttributes);
             sort($requiredKeys);
@@ -87,14 +160,14 @@ class ProductVariantController extends Controller
             }
         }
 
-        // 4. Create the Variant (No more forcing is_active to true)
+        // 4. Create the Variant
         $variant = new ProductVariant();
         $variant->product_id = $product->id;
-        $variant->name        = $validated['name'];
-        $variant->attributes  = $cleanAttributes;
-        $variant->is_active   = $validated['is_active'] ?? false; // Default to false if not provided
-        $variant->price       = 0;
-        $variant->stock_qty   = 0;
+        $variant->name       = $validated['name'];
+        $variant->attributes = $cleanAttributes; // This will be null if empty
+        $variant->is_active  = $validated['is_active'] ?? false;
+        $variant->price      = 0;
+        $variant->stock_qty  = 0;
 
         if ($request->hasFile('image')) {
             $variant->image_path = $this->uploadAndGetName($request->file('image'), $product, $variant->name);
@@ -102,15 +175,14 @@ class ProductVariantController extends Controller
 
         $variant->save();
 
-        // 5. Automatic Product Sync: 
-        // If the product was published but now has NO active variants, unpublish it.
+        // 5. Automatic Product Sync
         $activeCount = $product->variants()->where('is_active', true)->count();
-        
+        $statusMsg = ($activeCount === 0 && $product->is_published) 
+            ? 'Variant created. Product unpublished because it has no active variants.'
+            : 'Variant created successfully.';
+
         if ($activeCount === 0 && $product->is_published) {
             $product->update(['is_published' => false]);
-            $statusMsg = 'Variant created. Product unpublished because it has no active variants.';
-        } else {
-            $statusMsg = 'Variant created successfully.';
         }
 
         return to_route('admin.products.show', $product->id)->with('success', $statusMsg);
@@ -119,11 +191,55 @@ class ProductVariantController extends Controller
     /**
      * Update the existing variant
      */
+    // public function update(Request $request, ProductVariant $variant)
+    // {
+    //     $validated = $request->validate([
+    //         'name'       => 'required|string|max:255',
+    //         'attributes' => 'required|array',
+    //         'image'      => 'nullable|image|max:2048',
+    //         'is_active'  => 'boolean',
+    //     ]);
+
+    //     $product = $variant->product;
+
+    //     // 1. Uniqueness check (Ignore Self)
+    //     $exists = ProductVariant::where('product_id', $variant->product_id)
+    //         ->where('name', $validated['name'])
+    //         ->where('id', '!=', $variant->id)
+    //         ->exists();
+
+    //     if ($exists) {
+    //         return back()->withErrors(['name' => 'Name already in use.'])->withInput();
+    //     }
+
+    //     // 2. Handle Image
+    //     if ($request->hasFile('image')) {
+    //         if ($variant->image_path) Storage::disk('public')->delete($variant->image_path);
+    //         $variant->image_path = $this->uploadAndGetName($request->file('image'), $product, $validated['name']);
+    //     }
+
+    //     $variant->name       = $validated['name'];
+    //     $variant->attributes = $validated['attributes'];
+    //     $variant->is_active  = $validated['is_active'];
+    //     $variant->save();
+
+    //     // 3. Logic: If NO variants are active, unpublish the product
+    //     $activeCount = $product->variants()->where('is_active', true)->count();
+    //     if ($activeCount === 0 && $product->is_published) {
+    //         $product->update(['is_published' => false]);
+    //         $statusMsg = 'Variant updated. Product unpublished because no active variants remain.';
+    //     } else {
+    //         $statusMsg = 'Variant updated successfully.';
+    //     }
+
+    //     return to_route('admin.products.show', $product->id)->with('success', $statusMsg);
+    // }
+
     public function update(Request $request, ProductVariant $variant)
     {
         $validated = $request->validate([
             'name'       => 'required|string|max:255',
-            'attributes' => 'required|array',
+            'attributes' => 'nullable|array', // Changed to nullable
             'image'      => 'nullable|image|max:2048',
             'is_active'  => 'boolean',
         ]);
@@ -140,24 +256,32 @@ class ProductVariantController extends Controller
             return back()->withErrors(['name' => 'Name already in use.'])->withInput();
         }
 
-        // 2. Handle Image
+        // Clean Attributes
+        $cleanAttributes = [];
+        if (!empty($validated['attributes'])) {
+            $cleanAttributes = array_filter($validated['attributes'], function ($v, $k) {
+                return !empty(trim((string)$k)) && !empty(trim((string)$v));
+            }, ARRAY_FILTER_USE_BOTH);
+        }
+
+        // 3. Handle Image
         if ($request->hasFile('image')) {
             if ($variant->image_path) Storage::disk('public')->delete($variant->image_path);
             $variant->image_path = $this->uploadAndGetName($request->file('image'), $product, $validated['name']);
         }
 
         $variant->name       = $validated['name'];
-        $variant->attributes = $validated['attributes'];
+        $variant->attributes = $cleanAttributes; // Set to null if filtered out
         $variant->is_active  = $validated['is_active'];
         $variant->save();
 
-        // 3. Logic: If NO variants are active, unpublish the product
+        // 4. Logic: If NO variants are active, unpublish the product
         $activeCount = $product->variants()->where('is_active', true)->count();
+        $statusMsg = 'Variant updated successfully.';
+
         if ($activeCount === 0 && $product->is_published) {
             $product->update(['is_published' => false]);
             $statusMsg = 'Variant updated. Product unpublished because no active variants remain.';
-        } else {
-            $statusMsg = 'Variant updated successfully.';
         }
 
         return to_route('admin.products.show', $product->id)->with('success', $statusMsg);

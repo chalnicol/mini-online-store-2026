@@ -40,7 +40,7 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
             {/* product details */}
             <ProductDetails product={product} />
 
-            <div className="mt-8 space-y-12">
+            <div className="mt-8 mb-16 space-y-12">
                 {/* product description */}
                 <div>
                     <TitleBar
@@ -83,7 +83,9 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                                 <ReviewCard key={review.id} review={review} />
                             ))
                         ) : (
-                            <p>No reviews found.</p>
+                            <p className="text-sm tracking-wide">
+                                No reviews to display.
+                            </p>
                         )}
                     </div>
                 </div>
@@ -106,13 +108,8 @@ const ProductDetailsPage = ({ product }: ProductDetailsPageProps) => {
                             ))}
                         </div>
                     ) : (
-                        // <div className="flex flex-col items-center justify-center gap-y-2 min-h-42 shadow bg-gray-100 rounded mb-3 border border-gray-300">
-                        // 	<p className="text-lg font-semibold text-gray-400">
-                        // 		No related products found.
-                        // 	</p>
-                        // </div>
-                        <p className="min-h-20 px-2 py-1">
-                            No related products found.
+                        <p className="text-sm tracking-wide">
+                            No related products to display.
                         </p>
                     )}
                 </div>

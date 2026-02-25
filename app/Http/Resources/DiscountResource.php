@@ -24,6 +24,8 @@ class DiscountResource extends JsonResource
             'startDate' => $this->start_date,
             'endDate' => $this->end_date,
             'isActive' => $this->is_active,
+            'variantsCount' => (int) ($this->variants_count ?? 0),
+            'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
         ];
     }
 }

@@ -46,10 +46,22 @@ class ProductVariant extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function publishedReviews(): HasMany
+    {
+        return $this->hasMany(Review::class)->published();
+    }
+
+
     public function discounts(): BelongsToMany
     {
         return $this->belongsToMany(Discount::class)
                     ->withTimestamps();
+    }
+
+    // Add this: If attributes is null, return an empty array
+    public function getAttributesAttribute($value)
+    {
+        return json_decode($value, true) ?: [];
     }
 
     public function getCalculatedPriceAttribute()
@@ -89,9 +101,29 @@ class ProductVariant extends Model
         parent::boot();
 
         static::creating(function ($variant) {
-            if (empty($variant->sku)) {
-                $variant->sku = static::generateUniqueSku($variant);
-            }
+            $product = $variant->product ?? $variant->load('product')->product;
+
+            // 1. Get a clean, short version of the product name (e.g., NOVO-TSHIRT)
+            $pSlug = Str::limit(Str::slug($product->name), 15, '');
+
+            // 2. Get ONLY the attribute VALUES (e.g., ORANGE-XL)
+            // We avoid the Keys (Color/Size) to keep it short.
+            $aSlug = collect($variant->attributes)
+                ->values() // IMPORTANT: This ignores "Color" and "Size" keys
+                ->map(fn($v) => Str::slug($v))
+                ->implode('-');
+            
+            $aSlug = Str::limit($aSlug, 15, '');
+
+            // 3. Construct the base: PRODUCT-ATTRIBUTES
+            $base = Str::upper("{$pSlug}-{$aSlug}");
+
+            // 4. Generate a 4-character unique suffix
+            do {
+                $sku = $base . '-' . Str::upper(Str::random(4));
+            } while (static::where('sku', $sku)->exists());
+
+            $variant->sku = $sku;
         });
     }
 
@@ -99,30 +131,30 @@ class ProductVariant extends Model
      * Generate a clean, unique SKU
      * Format: PRODUCT-NAME-ATTRIBUTES-RANDOM
      */
-    public static function generateUniqueSku($variant)
-    {
-        // 1. Get product name, slugify it, then uppercase it
-        $productName = $variant->product->name ?? 'PROD';
-        $productSlug = Str::upper(Str::slug($productName));
+    // public static function generateUniqueSku($variant)
+    // {
+    //     // 1. Get product name, slugify it, then uppercase it
+    //     $productName = $variant->product->name ?? 'PROD';
+    //     $productSlug = Str::upper(Str::slug($productName));
 
-        // 2. Get the attribute values (e.g., "RED-LARGE")
-        $attributeString = collect($variant->attributes)
-            ->filter() // Remove empty values
-            ->map(fn($val) => Str::upper(Str::slug($val)))
-            ->implode('-');
+    //     // 2. Get the attribute values (e.g., "RED-LARGE")
+    //     $attributeString = collect($variant->attributes)
+    //         ->filter() // Remove empty values
+    //         ->map(fn($val) => Str::upper(Str::slug($val)))
+    //         ->implode('-');
 
-        // 3. Build the base
-        $base = $productSlug;
-        if (!empty($attributeString)) {
-            $base .= '-' . $attributeString;
-        }
+    //     // 3. Build the base
+    //     $base = $productSlug;
+    //     if (!empty($attributeString)) {
+    //         $base .= '-' . $attributeString;
+    //     }
 
-        // 4. Add a random unique suffix and check for uniqueness
-        do {
-            $sku = $base . '-' . Str::upper(Str::random(4));
-        } while (static::where('sku', $sku)->exists());
+    //     // 4. Add a random unique suffix and check for uniqueness
+    //     do {
+    //         $sku = $base . '-' . Str::upper(Str::random(4));
+    //     } while (static::where('sku', $sku)->exists());
 
-        return $sku;
-    }
+    //     return $sku;
+    // }
         
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory; // 1. Import the trait
 
+
 class Discount extends Model
 {
     use HasFactory;

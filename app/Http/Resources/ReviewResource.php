@@ -21,7 +21,9 @@ class ReviewResource extends JsonResource
             'rating' => (int) $this->rating,
             'comment' => $this->comment,
             'createdAt' => $this->created_at->format('M d, Y'),
-            'relativeTime' => $this->created_at->diffForHumans(),
+            'relativeTime' => $this->updated_at 
+                ? $this->updated_at->diffForHumans() 
+                : $this->created_at->diffForHumans(),
 
             // Use optional() or null coalescing to prevent crashes if relationships aren't loaded
             'user' => $this->relationLoaded('user') ? [
@@ -39,6 +41,9 @@ class ReviewResource extends JsonResource
                 'name' => $this->variant->name ?? null, 
                 'sku' => $this->variant->sku ?? null,
             ] : null,
+
+            'isPublished' => $this->is_published,
+            'isUpdated' => $this->updated_at != $this->created_at,
         ];
     }
 }

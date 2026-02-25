@@ -122,15 +122,9 @@ class StoreController extends Controller
             'variants' => fn($q) => $q->where('is_active', true),
             'variants.discounts',
 
-            // 2. Only get reviews where the associated variant is active
-            'reviews' => function ($query) {
-                $query->whereHas('variant', function ($q) {
-                    $q->where('is_active', true);
-                });
-            },
-            
-            'reviews.user',
-            'reviews.variant' // This will now only load active variants for these reviews
+            //
+            'publishedReviews.user',
+            'publishedReviews.variant' // This will now only load active variants for these reviews
         ])
         ->where('slug', $slug)
         ->where('is_published', true) // Best practice for a 'show' page

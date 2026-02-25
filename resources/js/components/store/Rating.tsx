@@ -27,7 +27,7 @@ const Rating: React.FC<RatingProps> = ({
     // const hasReviews = numReviews && numReviews > 0;
 
     const txtString = () => {
-        if (numReviews != null && numReviews === 0) return 'No review yet';
+        if (numReviews != null && numReviews === 0) return 'No reviews yet';
         if (numReviews != null && numReviews > 0)
             return `${numReviews} review${numReviews > 1 ? 's' : ''}`;
 

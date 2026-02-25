@@ -14,7 +14,11 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // return parent::toArray($request);
+       
+        $rating = ($this->reviews_count > 0) 
+            ? ($this->average_rating ?? 5.00) 
+            : 5.00;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -29,11 +33,12 @@ class ProductResource extends JsonResource
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
 
             // Reviews are usually only loaded on the 'Show' page
-            'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            'reviews' => ReviewResource::collection($this->whenLoaded('publishedReviews')),
             
             'createdAt' => $this->created_at->format('Y-m-d'),
             'updatedAt' => $this->updated_at->format('Y-m-d'),
-            'averageRating' => (float) ($this->average_rating ?? 0),
+            // 'averageRating' => (float) ($this->average_rating ?? 0),
+            'averageRating' => (float) number_format($rating, 2, '.', ''),
             'reviewsCount' => (int) ($this->reviews_count ?? 0),
             'variantsCount' => (int) ($this->variants_count ?? 0)
         ];

@@ -3,16 +3,29 @@ import AdminDetailCard from '@/components/store/admin/AdminDetailCard';
 import ConfirmationModal from '@/components/store/ConfirmationModal';
 import CustomButton from '@/components/store/CustomButton';
 import MenuOptions from '@/components/store/MenuOptions';
+import Pagination from '@/components/store/Pagination';
 import PromptMessage from '@/components/store/PromptMessage';
 import ReviewCard from '@/components/store/ReviewCard';
 import AdminLayout from '@/layouts/admin/layout';
 import { getImageUrl } from '@/lib/utils';
-import { BreadcrumbItem, OptionDetails, ProductVariant } from '@/types/store';
+import {
+    BreadcrumbItem,
+    OptionDetails,
+    PaginatedResponse,
+    ProductVariant,
+    Review,
+} from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
-const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
+const VariantDetails = ({
+    variant,
+    reviews,
+}: {
+    variant: ProductVariant;
+    reviews: PaginatedResponse<Review>;
+}) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -21,6 +34,8 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
         { label: 'Edit Variant', value: 'edit' },
         { label: 'Delete Variant', value: 'delete' },
     ];
+
+    const { data: reviewList, meta, links } = reviews;
 
     const handleOptionsClick = (value: number | string | null) => {
         console.log(value);
@@ -90,9 +105,6 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
 
             <div className="mt-4">
                 <div className="flex items-center gap-x-2 border-b border-slate-400 pb-1.5 text-gray-900">
-                    <p className="flex items-center justify-center rounded border border-slate-300 bg-gray-200 px-2 text-sm font-bold tracking-widest text-gray-700">
-                        {variant.id < 10 ? `0${variant.id}` : variant.id}
-                    </p>
                     <h2 className="font-bold lg:text-lg xl:text-xl">
                         {variant.name}
                     </h2>
@@ -110,7 +122,13 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
                         className="my-2"
                     />
                 )}
-                <div className="my-3 grid max-h-[60dvh] grid-cols-1 gap-x-3 gap-y-6 overflow-y-auto px-3 md:grid-cols-2">
+                <div className="my-3 grid grid-cols-1 gap-x-3 gap-y-6 overflow-y-auto px-3 md:grid-cols-2 lg:grid-cols-3">
+                    <AdminDetailCard title="ID">
+                        <p className="text-slate-00 text-sm font-semibold tracking-wider text-slate-600 uppercase">
+                            {variant.id < 10 ? `0${variant.id}` : variant.id}
+                        </p>
+                    </AdminDetailCard>
+
                     <AdminDetailCard title="SKU">
                         <p className="text-slate-00 text-sm font-semibold tracking-wider text-slate-600 uppercase">
                             {variant.sku}
@@ -127,20 +145,21 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
                         </div>
                     </AdminDetailCard>
 
+                    <AdminDetailCard title="stock quantity">
+                        <p className="text-slate-00 text-sm font-semibold tracking-wider uppercase">
+                            {variant.stockQty}
+                        </p>
+                    </AdminDetailCard>
+
                     <AdminDetailCard title="Calculated Price">
                         <p className="text-slate-00 text-sm font-semibold tracking-wider text-green-700 uppercase">
                             {formatPrice(variant.calculatedPrice)}
                         </p>
                     </AdminDetailCard>
+
                     <AdminDetailCard title="Original Price">
                         <p className="text-slate-00 text-sm font-semibold tracking-wider text-red-900 uppercase">
                             {formatPrice(variant.price)}
-                        </p>
-                    </AdminDetailCard>
-
-                    <AdminDetailCard title="stock quantity">
-                        <p className="text-slate-00 text-sm font-semibold tracking-wider uppercase">
-                            {variant.stockQty}
                         </p>
                     </AdminDetailCard>
 
@@ -172,11 +191,12 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
                         {variant.discounts && variant.discounts.length > 0 ? (
                             <>
                                 {variant.discounts.map((discount) => (
-                                    <div
+                                    <Link
+                                        href={`/admin/discounts/${discount.id}`}
                                         key={discount.id}
-                                        className="flex flex-wrap gap-1.5"
+                                        className="flex gap-1.5"
                                     >
-                                        <p className="text-slate-00 space-x-1 rounded border border-gray-300 px-3 text-sm font-semibold tracking-wider uppercase shadow">
+                                        <p className="text-slate-00 space-x-1 rounded border border-gray-300 px-3 text-sm font-semibold tracking-wider uppercase shadow hover:bg-gray-100 hover:shadow-md">
                                             <span>{discount.code}</span>
                                             <span>-</span>
                                             <span>
@@ -188,7 +208,7 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
                                                 Off
                                             </span>
                                         </p>
-                                    </div>
+                                    </Link>
                                 ))}
                             </>
                         ) : (
@@ -196,17 +216,27 @@ const VariantDetails = ({ variant }: { variant: ProductVariant }) => {
                         )}
                     </AdminDetailCard>
 
-                    <AdminDetailCard title="Reviews" className="col-span-2">
-                        {variant.reviews && variant.reviews.length > 0 ? (
-                            <div>
-                                {variant.reviews.map((review) => (
-                                    <ReviewCard
-                                        key={review.id}
-                                        review={review}
-                                        size="sm"
-                                    />
-                                ))}
-                            </div>
+                    <AdminDetailCard
+                        title="Reviews"
+                        className="md:col-span-2 lg:col-span-3"
+                    >
+                        {reviewList.length > 0 ? (
+                            <>
+                                <div>
+                                    {reviewList.map((review) => (
+                                        <ReviewCard
+                                            key={review.id}
+                                            review={review}
+                                            size="sm"
+                                        />
+                                    ))}
+                                </div>
+                                <Pagination
+                                    meta={meta}
+                                    className="mt-1"
+                                    type="simple"
+                                />
+                            </>
                         ) : (
                             <p>--</p>
                         )}

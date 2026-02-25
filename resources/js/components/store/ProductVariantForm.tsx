@@ -13,8 +13,11 @@ const ProductVariantForm = ({
     productId?: number | null;
     variant?: ProductVariant | null;
 }) => {
+    // const [preview, setPreview] = useState<string | null>(
+    //     variant?.imagePath || null,
+    // );
     const [preview, setPreview] = useState<string | null>(
-        variant?.imagePath || null,
+        variant?.imagePath ? `/storage/${variant.imagePath}` : null,
     );
 
     const {
@@ -28,11 +31,11 @@ const ProductVariantForm = ({
         clearErrors,
     } = useForm({
         name: variant?.name || '',
-        // Start with an empty selection if creating
+        // If no attributes exist, start with an empty object {} instead of {'':''}
         attributes:
             variant?.attributes && Object.keys(variant.attributes).length > 0
                 ? variant.attributes
-                : { '': '' },
+                : {},
         image: null as File | null,
         is_active: variant?.isActive ?? true,
         product_id: productId || null,
@@ -62,8 +65,8 @@ const ProductVariantForm = ({
     const removeAttribute = (key: string) => {
         const newAttrs = { ...data.attributes };
         delete newAttrs[key];
-        // Ensure at least one row exists for UI purposes
-        if (Object.keys(newAttrs).length === 0) newAttrs[''] = '';
+        // REMOVED: if (Object.keys(newAttrs).length === 0) newAttrs[''] = '';
+        // Let it be empty so the backend receives null
         setData('attributes', newAttrs);
     };
 
@@ -85,15 +88,15 @@ const ProductVariantForm = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Filter out empty keys before sending
         const cleanAttributes = Object.fromEntries(
-            Object.entries(data.attributes).filter(([k]) => k.trim() !== ''),
+            Object.entries(data.attributes).filter(
+                ([k, v]) => k.trim() !== '' && v.trim() !== '',
+            ),
         );
 
-        // Create a final object that includes everything
         const payload = {
             ...data,
-            attributes: cleanAttributes,
+            attributes: cleanAttributes, // This will be {} if empty
         };
 
         if (mode === 'create') {

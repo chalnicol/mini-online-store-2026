@@ -2,10 +2,10 @@ import { cn } from '@/lib/utils';
 import { Category, Product } from '@/types/store';
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import BaseModal from './BaseModal';
-import CategoryPicker from './CategoryPicker';
-import CustomButton from './CustomButton';
-import PromptMessage from './PromptMessage';
+import BaseModal from '../../BaseModal';
+import CategoryPicker from '../../CategoryPicker';
+import CustomButton from '../../CustomButton';
+import PromptMessage from '../../PromptMessage';
 
 const ProductForm = ({ product }: { product?: Product | null }) => {
     // const { categories } = useFilterSearch();

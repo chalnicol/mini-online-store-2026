@@ -43,6 +43,15 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function publishedReviews(): HasMany
+    {
+        return $this->hasMany(Review::class)
+            ->published() // Use the scope from step 1
+            ->whereHas('variant', function ($q) {
+                $q->where('is_active', true);
+            });
+    }
+
     //get variants count
     public function getVariantsCountAttribute(): int
     {
@@ -51,7 +60,7 @@ class Product extends Model
     //get reviews count
     public function getReviewsCountAttribute(): int
     {
-        return (int) $this->reviews()->count();
+        return (int) $this->publishedReviews()->count();
     }
 
 

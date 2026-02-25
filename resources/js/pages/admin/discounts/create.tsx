@@ -1,11 +1,11 @@
 import AdminBreadcrumbs from '@/components/store/admin/AdminBreadcrumbs';
-import ProductForm from '@/components/store/admin/forms/ProductForm';
+import DiscountForm from '@/components/store/admin/forms/DiscountForm';
 import AdminLayout from '@/layouts/admin/layout';
 import { BreadcrumbItem } from '@/types/store';
 
-const ProductCreate = () => {
+const DiscountCreate = () => {
     const breadcrumbItems: BreadcrumbItem[] = [
-        { title: 'Products', href: '/admin/products' },
+        { title: 'Discounts', href: '/admin/discounts' },
         { title: 'Create' },
     ];
 
@@ -15,17 +15,16 @@ const ProductCreate = () => {
 
             <div className="my-3 flex items-center justify-between border-b border-gray-400 py-1">
                 <h2 className="text-lg font-bold text-gray-900">
-                    Create Product
+                    Create Discount
                 </h2>
             </div>
-
-            <ProductForm />
+            <DiscountForm />
         </div>
     );
 };
 
-ProductCreate.layout = (page: React.ReactNode) => (
+DiscountCreate.layout = (page: React.ReactNode) => (
     <AdminLayout children={page} />
 );
 
-export default ProductCreate;
+export default DiscountCreate;

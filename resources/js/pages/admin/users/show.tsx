@@ -39,18 +39,28 @@ const UserDetails = ({ user }: UserDetailsProps) => {
 
             <div className="mt-4">
                 <div className="flex items-center gap-x-2 border-b border-slate-400 pb-1 text-gray-900">
-                    <p className="flex items-center justify-center rounded border border-slate-300 bg-gray-200 px-2 text-sm font-bold tracking-widest text-gray-700">
+                    {/* <p className="flex items-center justify-center rounded border border-slate-300 bg-gray-200 px-2 text-sm font-bold tracking-widest text-gray-700">
                         {user.id < 10 ? `0${user.id}` : user.id}
-                    </p>
+                    </p> */}
 
                     <p className="font-bold lg:text-lg xl:text-xl">
                         {user.fname} {user.lname}
                     </p>
                 </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-6 px-3 md:grid-cols-2">
+                <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-6 px-3 md:grid-cols-2 lg:grid-cols-3">
+                    <AdminDetailCard title="ID">
+                        <p className="text-sm font-semibold">{user.id}</p>
+                    </AdminDetailCard>
+
                     <AdminDetailCard title="Email">
                         <p className="text-sm font-semibold">{user.email}</p>
+                    </AdminDetailCard>
+
+                    <AdminDetailCard title="Member Since">
+                        <p className="text-sm font-semibold">
+                            {user.memberSince}
+                        </p>
                     </AdminDetailCard>
 
                     <AdminDetailCard title="Roles">
@@ -70,12 +80,6 @@ const UserDetails = ({ user }: UserDetailsProps) => {
                         )}
                     </AdminDetailCard>
 
-                    <AdminDetailCard title="Member Since">
-                        <p className="text-sm font-semibold">
-                            {user.memberSince}
-                        </p>
-                    </AdminDetailCard>
-
                     <AdminDetailCard title="Account Status" className="">
                         <CustomButton
                             label={user.isBlocked ? 'UNBLOCK' : 'BLOCK'}
@@ -90,7 +94,7 @@ const UserDetails = ({ user }: UserDetailsProps) => {
 
                     <AdminDetailCard
                         title="Addresses"
-                        className="md:col-span-2"
+                        className="md:col-span-2 lg:col-span-3"
                     >
                         {user.addresses && user.addresses.length > 0 ? (
                             <div className="mb-1 space-y-1.5">

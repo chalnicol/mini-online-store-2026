@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 
-class ReviewController extends Controller
+class UserReviewController extends Controller
 {
     //
     public function index(Request $request)
@@ -14,5 +14,4 @@ class ReviewController extends Controller
         return Inertia::render('user/profile/reviews');
     }
 
-   
 }

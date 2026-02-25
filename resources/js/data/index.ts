@@ -63,10 +63,10 @@ export const adnminNavItems: NavItem[] = [
     { id: 3, href: '/admin/products', label: 'Products' },
     { id: 6, href: '/admin/categories', label: 'Categories' },
     { id: 10, href: '/admin/discounts', label: 'Discounts' },
+    { id: 8, href: '/admin/reviews', label: 'Reviews' },
     { id: 9, href: '/admin/vouchers', label: 'Vouchers' },
     { id: 4, href: '/admin/stocks', label: 'Stocks' },
     { id: 5, href: '/admin/orders', label: 'Orders' },
-    { id: 8, href: '/admin/reviews', label: 'Reviews' },
 ];
 
 export const profileNavItems: NavItem[] = [

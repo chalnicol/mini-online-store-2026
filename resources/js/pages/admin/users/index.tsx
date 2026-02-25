@@ -35,29 +35,37 @@ const UserListing = ({ users, filters }: UserListingProps) => {
                                 <Link
                                     key={item.id}
                                     href={`/admin/users/${item.id}`}
-                                    className="flex gap-2 rounded border border-gray-400 p-2 shadow hover:shadow-md"
+                                    className="overflow-hidden rounded border border-gray-400 shadow hover:shadow-md"
                                 >
-                                    <p className="flex min-w-10 flex-shrink-0 items-center justify-center rounded bg-gray-300 p-0.5 px-2 text-center text-xs font-bold tracking-widest text-gray-700">
+                                    {/* <p className="flex min-w-10 flex-shrink-0 items-center justify-center rounded bg-gray-300 p-0.5 px-2 text-center text-xs font-bold tracking-widest text-gray-700">
                                         {item.id < 10 ? `0${item.id}` : item.id}
-                                    </p>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-x-1.5 text-sm text-slate-500">
-                                            <p className="text-sm font-bold">
-                                                {item.fname} {item.lname}
+                                    </p> */}
+                                    <div className="flex gap-2 p-2">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-x-1.5 text-sm text-slate-500">
+                                                <p className="text-sm font-bold">
+                                                    {item.fname} {item.lname}
+                                                </p>
+                                            </div>
+                                            <p className="text-xs">
+                                                {item.email}
                                             </p>
                                         </div>
-                                        <p className="text-xs">{item.email}</p>
-                                    </div>
 
-                                    <div className="flex flex-none flex-col gap-1">
-                                        <p
-                                            className={cn(
-                                                'aspect-square h-2 rounded-full',
-                                                item.isBlocked
-                                                    ? 'bg-rose-500'
-                                                    : 'bg-green-600',
-                                            )}
-                                        ></p>
+                                        <div className="flex flex-none flex-col gap-1">
+                                            <p
+                                                className={cn(
+                                                    'aspect-square h-2 rounded-full',
+                                                    item.isBlocked
+                                                        ? 'bg-rose-500'
+                                                        : 'bg-green-600',
+                                                )}
+                                            ></p>
+                                        </div>
+                                    </div>
+                                    <div className="border-t border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-gray-600">
+                                        ID:
+                                        {item.id < 10 ? `0${item.id}` : item.id}
                                     </div>
                                 </Link>
                             ))}

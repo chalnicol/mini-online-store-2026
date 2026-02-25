@@ -12,7 +12,19 @@ class Review extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['product_id', 'product_variant_id', 'user_id', 'rating', 'comment'];
+    protected $fillable = [
+        'product_id', 
+        'product_variant_id', 
+        'user_id', 
+        'rating', 
+        'comment',
+        'is_published'
+    ];
+
+    protected $casts = [
+        'rating' => 'integer',
+        'is_published' => 'boolean',
+    ];
 
     /**
      * Get the user who wrote the review.
@@ -35,17 +47,24 @@ class Review extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id', 'id');
     }
 
+    public function scopePublished($query)
+    {
+        return $query->where('is_published', true); // or whatever your column is
+    }
+
     protected static function booted()
     {
         $updateRating = function ($review) {
             $product = $review->product;
             if ($product) {
-                // Update the product's cached rating
-                $avg = $product->reviews()->avg('rating');
+                // 1. Calculate average only for published reviews
+                $avg = $product->publishedReviews()->avg('rating');
+
+                // Update the cached columns on the product
                 $product->update([
-                    'average_rating' => $avg ?? 0.00
+                    'average_rating' => $avg ?? 0.00,
                 ]);
-            }
+            }  
         };
 
         static::created($updateRating);

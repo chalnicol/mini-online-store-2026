@@ -16,7 +16,7 @@ class ProfileController extends Controller
 {
     
     /**
-     * Show the user's profile settings page.
+     * Show the user's profile settings page
      */
     public function edit(Request $request): Response
     {
@@ -59,4 +59,5 @@ class ProfileController extends Controller
 
         return redirect('/');
     }
+
 }

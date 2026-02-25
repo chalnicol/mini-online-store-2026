@@ -4,16 +4,18 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
+
 use App\Http\Controllers\StoreController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\UserReviewController;
+use App\Http\Controllers\ProfileController;
+
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\PurchaseLogController;
@@ -21,9 +23,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductVariantController;
-
-
-
+use App\Http\Controllers\Admin\DiscountController;
+use App\Http\Controllers\Admin\ReviewController;
 
 
 Route::get('/', [StoreController::class, 'index'])->name('home');
@@ -65,7 +66,7 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
     Route::get('/profile/contacts', [ContactController::class, 'index'])->name('profile.contacts');
 
     //profile reviews...
-    Route::get('/profile/reviews', [ReviewController::class, 'index'])->name('profile.reviews');
+    Route::get('/profile/reviews', [UserReviewController::class, 'index'])->name('profile.reviews');
 
     //profile notifications...
     Route::get('/profile/notifications', [NotificationController::class, 'index'])
@@ -138,6 +139,23 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
         Route::patch('/categories/{category}/move', [CategoryController::class, 'move'])->name('categories.move');
         Route::patch('/categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('categories.toggleStatus');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        
+        Route::get('/discounts', [DiscountController::class, 'index'])->name('discounts');
+        Route::get('/discounts/create', [DiscountController::class, 'create'])->name('discounts.create');
+        Route::get('/discounts/search-variants', [DiscountController::class, 'searchVariants'])->name('discounts.searchVariants');
+        Route::get('/discounts/{discount}', [DiscountController::class, 'show'])->name('discounts.show');
+        Route::get('/discounts/{discount}/edit', [DiscountController::class, 'edit'])->name('discounts.edit');
+        Route::post('/discounts', [DiscountController::class, 'store'])->name('discounts.store');
+        Route::put('/discounts/{discount}', [DiscountController::class, 'update'])->name('discounts.update');
+        Route::patch('/discounts/{discount}/toggle-status', [DiscountController::class, 'toggleStatus'])->name('categories.toggleStatus');
+        Route::delete('/discounts/{discount}', [DiscountController::class, 'destroy'])->name('discounts.destroy');
+
+
+        Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');
+        Route::get('/reviews/{review}', [ReviewController::class, 'show'])->name('reviews.show');
+        Route::patch('/reviews/{review}/toggle-published-status', [ReviewController::class, 'togglePublishedStatus'])->name('reviews.togglePublishedStatus');
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
 
         // Inventory & Stock (Our new engine)
         //Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
