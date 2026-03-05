@@ -3,39 +3,137 @@
 namespace App\Services;
 
 use App\Models\ProductVariant;
-use App\Models\StockMovement;
+use App\Models\InventoryMovement;
+use App\Models\PriceHistory;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
-    /**
-     * The single point of truth for moving stock.
-     */
-    public function adjustStock(int $variantId, int $quantity, string $type, string $reason, $reference = null)
-    {
-        return DB::transaction(function () use ($variantId, $quantity, $type, $reason, $reference) {
-            $variant = ProductVariant::lockForUpdate()->findOrFail($variantId);
+  /**
+   * Handle a new purchase/restock from a supplier.
+   */
+  public function recordPurchase(
+    ProductVariant $variant,
+    int $quantity,
+    float $unitCost,
+    bool $forcePriceUpdate = false,
+    int $supplierId = null,
+    string $reason = 'Supplier Restock',
+  ) {
+    return DB::transaction(function () use ($variant, $quantity, $unitCost, $forcePriceUpdate, $supplierId, $reason) {
+      // 1. Calculate New Avg Cost
+      $currentTotalValue = $variant->stock_qty * $variant->avg_unit_cost;
+      $newBatchValue = $quantity * $unitCost;
+      $newTotalQty = $variant->stock_qty + $quantity;
+      $newAvgCost = $newTotalQty > 0 ? ($currentTotalValue + $newBatchValue) / $newTotalQty : $unitCost;
 
-            // 1. Create the Movement Log
-            $movement = new StockMovement();
-            $movement->product_variant_id = $variantId;
-            $movement->quantity = $quantity; // e.g., -5 for sales, 10 for restock
-            $movement->type = $type;
-            $movement->reason = $reason;
-            $movement->user_id = auth()->id();
+      // 2. Calculate Suggested Price (30% Margin)
+      $newSuggestedPrice = $newAvgCost / 0.7;
 
-            // Handle the polymorphic reference (Order or PurchaseLog)
-            if ($reference) {
-                $movement->reference_id = $reference->id;
-                $movement->reference_type = get_class($reference);
-            }
+      // 3. Create Ledger Entry
+      InventoryMovement::create([
+        'product_variant_id' => $variant->id,
+        'supplier_id' => $supplierId,
+        'quantity' => $quantity,
+        'unit_cost' => $unitCost,
+        'type' => 'purchase',
+        'status' => 'available',
+        'reason' => $reason,
+        'user_id' => auth()->id(),
+      ]);
 
-            $movement->save();
+      // 4. Update the Variant
+      $updateData = [
+        'stock_qty' => $newTotalQty,
+        'avg_unit_cost' => $newAvgCost,
+      ];
 
-            // 2. Update the cached stock quantity on the variant
-            $variant->increment('stock_qty', $quantity);
+      if ($forcePriceUpdate) {
+        // Immediate update: No prompt needed later
+        $updateData['price'] = $newSuggestedPrice;
+        $updateData['suggested_price'] = null;
 
-            return $movement;
-        });
-    }
+        // Log the price change immediately
+        PriceHistory::create([
+          'product_variant_id' => $variant->id,
+          'old_price' => $variant->price,
+          'new_price' => $newSuggestedPrice,
+          'margin_at_time' => 30.0,
+          'reason' => 'Auto-updated during purchase',
+        ]);
+      } else {
+        // Keep current price, but store the suggestion for the "Inbox"
+        $updateData['suggested_price'] = $newSuggestedPrice;
+      }
+
+      $variant->update($updateData);
+    });
+  }
+
+  /**
+   * Approve a suggested price change.
+   */
+  public function approvePriceChange(ProductVariant $variant, float $newPrice, string $reason = 'Admin Approved')
+  {
+    return DB::transaction(function () use ($variant, $newPrice, $reason) {
+      // Log to Price History
+      PriceHistory::create([
+        'product_variant_id' => $variant->id,
+        'old_price' => $variant->price,
+        'new_price' => $newPrice,
+        'margin_at_time' => $variant->avg_unit_cost > 0 ? (($newPrice - $variant->avg_unit_cost) / $newPrice) * 100 : 0,
+        'reason' => $reason,
+      ]);
+
+      // Update actual price and clear suggestion
+      $variant->update([
+        'price' => $newPrice,
+        'suggested_price' => null, // Reset since it's now approved
+      ]);
+    });
+  }
+
+  /**
+   * Step 1: Record a return into Quarantine (Pending Inspection)
+   */
+  public function recordReturnToQuarantine(
+    ProductVariant $variant,
+    int $quantity,
+    string $type = 'customer_return',
+    $reference = null,
+  ) {
+    // We do NOT update $variant->stock_qty here because items are NOT sellable yet.
+    return InventoryMovement::create([
+      'product_variant_id' => $variant->id,
+      'quantity' => $quantity,
+      'type' => $type,
+      'status' => 'quarantine',
+      'reason' => 'Pending Inspection',
+      'reference_id' => $reference?->id,
+      'reference_type' => $reference ? get_class($reference) : null,
+      'user_id' => auth()->id(),
+    ]);
+  }
+
+  /**
+   * Step 2: The Inspection (Move from Quarantine to Stock or Trash)
+   */
+  public function inspectQuarantinedItem(InventoryMovement $movement, string $decision)
+  {
+    return DB::transaction(function () use ($movement, $decision) {
+      if ($decision === 'restock') {
+        // Change status to available
+        $movement->update(['status' => 'available', 'reason' => 'Passed Inspection']);
+
+        // Now, and only now, we add it to the sellable stock count
+        $movement->variant->increment('stock_qty', $movement->quantity);
+      } else {
+        // Decision is 'damaged' or 'lost'
+        $movement->update(['status' => $decision, 'reason' => 'Failed Inspection: ' . $decision]);
+        // stock_qty remains the same because it was never added.
+      }
+
+      return $movement;
+    });
+  }
 }

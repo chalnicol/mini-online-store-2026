@@ -339,6 +339,36 @@ class ProductVariantController extends Controller
         return back()->with('success', 'Variant status updated.');
     }
 
+
+    //
+    public function search(Request $request)
+    {
+        $variants = ProductVariant::query()
+            ->with(['product'])
+            ->where('is_active', true)
+            // ->whereDoesntHave('discounts', function ($query) {
+            //     $query->where('is_active', true)
+            //         ->where('end_date', '>', now());
+            // })
+            // Only run this if there is a search term
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    // 1. Search the Variant's SKU (if you have one)
+                    $q->where('sku', 'like', "%{$search}%")
+                    // 2. Search the parent Product's name
+                    ->orWhereHas('product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
+                });
+            })
+            ->limit(10) // Good for performance in a picker modal
+            ->get();     // Execute the query
+          
+        return response()->json(
+            ProductVariantResource::collection($variants)
+        );
+    }
+
     /**
      * Helper to handle naming and storing
      * Format: products/{product-slug}/{variant-slug}-{timestamp}.jpg

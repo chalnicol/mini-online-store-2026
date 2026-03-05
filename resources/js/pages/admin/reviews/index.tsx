@@ -53,20 +53,18 @@ const ReviewListing = ({
                             >
                                 <div className="flex items-start p-2">
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-x-2">
-                                            <span className="text-sm font-bold text-gray-600">
+                                        <div className="flex items-baseline gap-x-2">
+                                            <span className="font-bold text-gray-600">
                                                 {item.user.name}
                                             </span>
-                                            <span className="text-xs">
+                                            <span className="text-xs text-slate-500">
                                                 {item.relativeTime}
                                             </span>
                                         </div>
-                                        <div className="space-x-1.5 text-xs">
+                                        <div className="space-x-1.5 text-[13px] font-semibold text-slate-400">
                                             <span>{item.product.name}</span>
                                             <span>&bull;</span>
-                                            <span className="text-gray-500">
-                                                {item.variant.name}
-                                            </span>
+                                            <span>{item.variant.name}</span>
                                         </div>
                                     </div>
 

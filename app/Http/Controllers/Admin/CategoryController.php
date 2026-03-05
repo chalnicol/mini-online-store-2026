@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\ProductResource;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -13,162 +15,158 @@ use Illuminate\Validation\Rule;
 
 use Inertia\Inertia;
 
-
 class CategoryController extends Controller
 {
-    
+	public function index()
+	{
+		$categories = Category::whereNull('parent_id')
+			->with('childrenRecursive')
+			->orderBy('name', 'asc')
+			->get();
 
-    public function index()
-    {
-        $categories = Category::whereNull('parent_id')
-        ->with('childrenRecursive')
-        ->orderBy('name', 'asc')
-        ->get();
+		return Inertia::render('admin/categories/index', [
+			'allCategories' => CategoryResource::collection($categories)->resolve(),
+		]);
+	}
 
-        return Inertia::render('admin/categories/index', [
-            'allCategories' => CategoryResource::collection($categories)->resolve()
-        ]);
-    }
+	public function show(Category $category)
+	{
+		// Fetch a single category by slug with its immediate children
+		$products = $category
+			->products()
+			->with('variants')
+			->latest()
+			->paginate(10) //.
+			->withQueryString(); //..
 
-    public function show($slug)
-    {
-        // Fetch a single category by slug with its immediate children
-        $category = Category::where('slug', $slug)
-            ->with('children')
-            ->firstOrFail();
+		return Inertia::render('admin/categories/show', [
+			'category' => new CategoryResource($category->load(['parent', 'children'])),
+			'products' => ProductResource::collection($products),
+		]);
+	}
 
-        return response()->json($category);
-    }
+	public function store(Request $request)
+	{
+		// 1. Generate the slug manually to validate it
+		$slug = Str::slug($request->name);
 
-    public function store(Request $request)
-    {
-        // 1. Generate the slug manually to validate it
-        $slug = Str::slug($request->name);
-        
-        $validator = Validator::make($request->all(), [
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('categories', 'name'),
-            ],
-            'parentId' => 'nullable|exists:categories,id',
-        ]);
+		$validator = Validator::make($request->all(), [
+			'name' => ['required', 'string', 'max:255', Rule::unique('categories', 'name')],
+			'parentId' => 'nullable|exists:categories,id',
+		]);
 
-        // Manually check slug uniqueness and attach error to 'name'
-        $validator->after(function ($validator) use ($slug) {
-            $exists = Category::where('slug', $slug)
-                ->exists();
+		// Manually check slug uniqueness and attach error to 'name'
+		$validator->after(function ($validator) use ($slug) {
+			$exists = Category::where('slug', $slug)->exists();
 
-            if ($exists) {
-                // This forces the error to appear under the "name" key in your TS/React frontend
-                $validator->errors()->add('name', 'This name results in a duplicate URL slug. Please try a more specific name.');
-            }
-        });
+			if ($exists) {
+				// This forces the error to appear under the "name" key in your TS/React frontend
+				$validator
+					->errors()
+					->add(
+						'name',
+						'This name results in a duplicate URL slug. Please try a more specific name.',
+					);
+			}
+		});
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+		if ($validator->fails()) {
+			return back()->withErrors($validator)->withInput();
+		}
 
-        // If the user is trying to create a subcategory...
-        if ($request->filled('parent_id')) {
-            $parent = Category::findOrFail($request->parent_id);
+		// If the user is trying to create a subcategory...
+		if ($request->filled('parent_id')) {
+			$parent = Category::findOrFail($request->parent_id);
 
-            // CHECK: Does this parent already have products?
-            if ($parent->products()->exists()) {
-                return back()->withErrors([
-                    'parent_id' => "Cannot add subcategories to '{$parent->name}' because it already has products directly assigned to it. Move the products first."
-                ]);
-            }
-        }
+			// CHECK: Does this parent already have products?
+			if ($parent->products()->exists()) {
+				return back()->withErrors([
+					'parent_id' => "Cannot add subcategories to '{$parent->name}' because it already has products directly assigned to it. Move the products first.",
+				]);
+			}
+		}
 
-        $category = Category::create([
-            'name' => ucwords($request->name),
-            'slug' => $slug,
-            'parent_id' => $request->parentId,
-        ]);
+		$category = Category::create([
+			'name' => ucwords($request->name),
+			'slug' => $slug,
+			'parent_id' => $request->parentId,
+		]);
 
-        return back();
-    }
+		return back();
+	}
 
-    public function update(Request $request, Category $category)
-    {
-        // 1. Generate the slug from the incoming name
-        $slug = Str::slug($request->name);
-        
-        // 2. Inject it into the request for validation
-        $request->merge(['slug' => $slug]);
+	public function update(Request $request, Category $category)
+	{
+		// 1. Generate the slug from the incoming name
+		$slug = Str::slug($request->name);
 
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('categories', 'name')->ignore($category->id),
-            ],
-            'slug' => [
-                'required',
-                'string',
-                Rule::unique('categories', 'slug')->ignore($category->id),
-            ],
-        ]);
+		// 2. Inject it into the request for validation
+		$request->merge(['slug' => $slug]);
 
-        $category->update([
-            'name' => ucwords($validated['name']),
-            'slug' => $validated['slug'],
-        ]);
+		$validated = $request->validate([
+			'name' => [
+				'required',
+				'string',
+				'max:255',
+				Rule::unique('categories', 'name')->ignore($category->id),
+			],
+			'slug' => ['required', 'string', Rule::unique('categories', 'slug')->ignore($category->id)],
+		]);
 
-        return back();
-    }
+		$category->update([
+			'name' => ucwords($validated['name']),
+			'slug' => $validated['slug'],
+		]);
 
-    public function move(Request $request, Category $category)
-    {
-        $validated = $request->validate([
-            'parentId' => 'nullable|exists:categories,id',
-        ]);
+		return back();
+	}
 
-        $newParentId = $validated['parentId'];
+	public function move(Request $request, Category $category)
+	{
+		$validated = $request->validate([
+			'parentId' => 'nullable|exists:categories,id',
+		]);
 
-        if ($newParentId !== null) {
-            if ($newParentId == $category->id || in_array($newParentId, $category->getAllDescendantIds())) {
-                return back()->withErrors(['parentId' => 'Invalid movement.']);
-            }
-        }
+		$newParentId = $validated['parentId'];
 
-        $category->update(['parent_id' => $newParentId]);
+		if ($newParentId !== null) {
+			if ($newParentId == $category->id || in_array($newParentId, $category->getAllDescendantIds())) {
+				return back()->withErrors(['parentId' => 'Invalid movement.']);
+			}
+		}
 
-        return back();
-    }
+		$category->update(['parent_id' => $newParentId]);
 
-    public function toggleStatus(Category $category)
-    {
-        $category->update([
-            'is_active' => !$category->is_active
-        ]);
+		return back();
+	}
 
-        return back();
-    }
+	public function toggleStatus(Category $category)
+	{
+		$category->update([
+			'is_active' => !$category->is_active,
+		]);
 
-    public function destroy(Category $category)
-    {
-        // Check if the category has any children
-        if ($category->children()->exists()) {
-            return back()->withErrors([
-                'delete' => "Cannot delete '{$category->name}' because it has subcategories. Please move or delete the subcategories first."
-            ]);
-        }
-        if ($category->products()->exists()) {
-            // return response()->json(['error' => 'Category has products. Move them first!'], 422);
-            return back()->withErrors([
-                'delete' => "Cannot delete '{$category->name}' because it has products. Please move or delete the products first."
-            ]);
-        }
+		return back();
+	}
 
-        $category->delete();
+	public function destroy(Category $category)
+	{
+		// Check if the category has any children
+		if ($category->children()->exists()) {
+			return back()->withErrors([
+				'delete' => "Cannot delete '{$category->name}' because it has subcategories. Please move or delete the subcategories first.",
+			]);
+		}
+		if ($category->products()->exists()) {
+			// return response()->json(['error' => 'Category has products. Move them first!'], 422);
+			return back()->withErrors([
+				'delete' => "Cannot delete '{$category->name}' because it has products. Please move or delete the products first.",
+			]);
+		}
 
-        // No need to clear cache here if your Model has the 'booted' method!
-        return back();
-    }
-        
+		$category->delete();
 
+		// No need to clear cache here if your Model has the 'booted' method!
+		return back();
+	}
 }

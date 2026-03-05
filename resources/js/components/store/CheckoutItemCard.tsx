@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn, getImageUrl } from '@/lib/utils';
 import { CheckoutItem } from '@/types/store'; // Using your optimized type!
 import { formatPrice } from '@/utils/PriceUtils';
 import { Link } from '@inertiajs/react';
@@ -39,12 +39,9 @@ const CheckoutItemCard: React.FC<CheckoutItemCardProps> = ({
                 {/* 1. Thumbnail */}
                 <div className="relative flex-shrink-0">
                     <img
-                        src={
-                            variant.imagePath ||
-                            'https://placehold.co/200x200?text=No+Image'
-                        }
+                        src={getImageUrl(variant.imagePath)}
                         alt={variant.name}
-                        className="aspect-square h-14 rounded border border-gray-200 object-cover group-hover:border-gray-300 md:h-16"
+                        className="aspect-square h-14 rounded border border-gray-200 object-contain group-hover:border-gray-300 md:h-16"
                     />
                 </div>
 

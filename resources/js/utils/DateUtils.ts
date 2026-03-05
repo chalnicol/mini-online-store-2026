@@ -47,6 +47,12 @@ export const sanitizeDateForInput = (dateString: string | null | undefined) => {
     return dateString.split('T')[0];
 };
 
+export const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+};
+
 export const formatDate = (dateString: string) => {
     if (!dateString) return '';
 

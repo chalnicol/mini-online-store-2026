@@ -1,5 +1,5 @@
 import { useCart } from '@/context/CartContext';
-import { cn } from '@/lib/utils';
+import { cn, getImageUrl } from '@/lib/utils';
 import { CartItem } from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
 import { Link } from '@inertiajs/react';
@@ -61,27 +61,6 @@ const CartItemCard: React.FC<CartItemProps> = ({
         return () => debouncedUpdate.cancel();
     }, [debouncedUpdate]);
 
-    // useEffect(() => {
-    //     if (item.id === toDeleteId && toDeleteRef.current) {
-    //         gsap.fromTo(
-    //             toDeleteRef.current,
-    //             { height: 0, opacity: 0 },
-    //             {
-    //                 height: 'auto',
-    //                 opacity: 1,
-    //                 duration: 0.3,
-    //                 ease: 'power4.out',
-    //                 overwrite: true,
-    //             },
-    //         );
-    //     }
-    //     return () => {
-    //         if (toDeleteRef.current) {
-    //             gsap.killTweensOf(toDeleteRef.current);
-    //         }
-    //     };
-    // }, [item.id, toDeleteId]);
-
     const handleQtyChange = (newQty: number) => {
         if (newQty < 1 || newQty > variant.stockQty) return;
 
@@ -116,12 +95,9 @@ const CartItemCard: React.FC<CartItemProps> = ({
                         className="group flex flex-1 gap-x-2"
                     >
                         <img
-                            src={
-                                variant.imagePath ||
-                                'https://placehold.co/600x400?text=No+Image+Available'
-                            }
+                            src={getImageUrl(variant.imagePath)}
                             alt={variant.name}
-                            className="aspect-square h-14 flex-shrink-0 rounded border object-cover group-hover:border-gray-300 md:h-16"
+                            className="aspect-square h-14 flex-shrink-0 rounded border object-contain group-hover:border-gray-300 md:h-16"
                         />
                         <div className="flex flex-col">
                             <h3 className="truncate text-sm font-bold text-gray-900 group-hover:underline md:text-base">

@@ -22,31 +22,48 @@ class UserController extends Controller
                 // Grouping the OR conditions inside a nested closure
                 $query->where(function ($q) use ($search) {
                     $q->where('fname', 'like', "%{$search}%")
-                    ->orWhere('lname', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('lname', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             // ->latest()
-            ->orderBy('updated_at','desc')
+            ->orderBy('updated_at', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(10)
             ->withQueryString();
-
 
         return Inertia::render('admin/users/index', [
             // FIXED: Do not use UserResource::collection() here for paginated data
             // Instead, pass the paginator directly; Laravel/Inertia will handle the transformation
             'users' => UserResource::collection($users),
-            'filters' => (object) $request->only(['search'])
+            'filters' => (object) $request->only(['search']),
         ]);
     }
 
     public function show(User $user)
-    {   
-
+    {
         return Inertia::render('admin/users/show', [
-            'user' => new UserResource($user->load('addresses'))
+            'user' => new UserResource($user->load('addresses')),
         ]);
+    }
+
+    //
+    public function search(Request $request)
+    {
+        $users = User::query()
+            // Only run this if there is a search term
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('fname', 'like', "%{$search}%")
+                        ->orWhere('lname', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                    // 2. Search the parent Product's name
+                });
+            })
+            ->limit(10) // Good for performance in a picker modal
+            ->get(); // Execute the query
+
+        return response()->json(UserResource::collection($users));
     }
 
     public function toggleBlockStatus(User $user)

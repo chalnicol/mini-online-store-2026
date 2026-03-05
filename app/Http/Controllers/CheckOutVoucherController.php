@@ -6,7 +6,7 @@ use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class VoucherController extends Controller
+class CheckOutVoucherController extends Controller
 {
     /**
      * Display a list of vouchers for the Global Window

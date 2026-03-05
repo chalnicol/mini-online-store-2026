@@ -26,14 +26,14 @@ const SortAndView: React.FC<SortAndViewProps> = ({
     } = useFilterSearch();
 
     const options: SelectOptionsType<string>[] = [
+        { id: 7, value: 'date-desc', label: 'Newest' },
+        { id: 8, value: 'date-asc', label: 'Oldest' },
         { id: 1, value: 'name-asc', label: 'Name: A to Z' },
         { id: 2, value: 'name-desc', label: 'Name: Z to A' },
         { id: 3, value: 'price-asc', label: 'Price: Low to High' },
         { id: 4, value: 'price-desc', label: 'Price: High to Low' },
         { id: 5, value: 'rating-desc', label: 'Rating: High to Low' },
         { id: 6, value: 'rating-asc', label: 'Rating: Low to High' },
-        { id: 7, value: 'date-desc', label: 'Newest' },
-        { id: 8, value: 'date-asc', label: 'Oldest' },
     ];
     return (
         <div

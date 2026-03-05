@@ -287,11 +287,8 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
 
                             <div className="mt-2 flex items-center gap-3 rounded bg-gray-50 p-2 text-sm">
                                 <img
-                                    src={
-                                        activeVariant.imagePath ||
-                                        'https://placehold.co/50x50'
-                                    }
-                                    className="h-10 w-10 rounded object-cover"
+                                    src={getImageUrl(activeVariant.imagePath)}
+                                    className="h-10 w-10 rounded object-contain"
                                 />
                                 <div>
                                     <p className="font-bold text-gray-700">
