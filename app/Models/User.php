@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes; // ✅ added
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -17,137 +18,120 @@ use App\Models\UserAddress;
 use App\Models\UserContact;
 use App\Notifications\VerifyEmailNotification;
 use App\Notifications\PasswordResetRequestNotification;
-
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasRoles, HasPermissions, HasFactory, Notifiable, TwoFactorAuthenticatable;
+  use HasRoles, SoftDeletes, HasPermissions, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'fname',
-        'lname',
-        'email',
-        'password',
-        'email_verified_at',
-        'email_verification_token',
-        'email_verification_token_expires_at',
-        'is_blocked',
+  protected $fillable = [
+    'fname',
+    'lname',
+    'email',
+    'password',
+    'email_verified_at',
+    'email_verification_token',
+    'email_verification_token_expires_at',
+    'is_blocked',
+  ];
+
+  protected $hidden = ['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'];
+
+  protected function casts(): array
+  {
+    return [
+      'email_verified_at' => 'datetime',
+      'password' => 'hashed',
+      'two_factor_confirmed_at' => 'datetime',
+      'email_verification_token_expires_at' => 'datetime',
+      'is_blocked' => 'boolean',
     ];
+  }
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
-        'remember_token',
-    ];
+  protected $appends = ['cart_item_count'];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'two_factor_confirmed_at' => 'datetime',
-            'email_verification_token_expires_at' => 'datetime',
-            'is_blocked' => 'boolean',
-            
-        ];
-    }
+  public function sendPasswordResetNotification($token)
+  {
+    $this->notify(new PasswordResetRequestNotification($token));
+  }
 
-    protected $appends = ['cart_item_count'];
+  public function sendEmailVerificationNotification()
+  {
+    $this->notify(new VerifyEmailNotification());
+  }
 
+  public function hasVerifiedEmail(): bool
+  {
+    return !is_null($this->email_verified_at);
+  }
 
-    public function sendPasswordResetNotification($token)
-    {
-        // This triggers your custom notification instead of the default one
-        $this->notify(new PasswordResetRequestNotification($token));
-    }
+  public function isBlocked(): bool
+  {
+    return (bool) $this->is_blocked;
+  }
 
-   public function sendEmailVerificationNotification()
-    {
-        $this->notify(new VerifyEmailNotification);
-    }
+  // ---- Relationships ----
 
-    public function hasVerifiedEmail(): bool
-    {
-        // return (bool) ($this->email_verified_at !== null);
-        return !is_null($this->email_verified_at);
-    }
+  public function orders(): HasMany
+  {
+    return $this->hasMany(Order::class);
+  }
 
+  public function addresses(): HasMany
+  {
+    return $this->hasMany(UserAddress::class);
+  }
 
-    public function isBlocked(): bool
-    {
-        return (bool) $this->is_blocked;
-    }
+  public function contacts(): HasMany
+  {
+    return $this->hasMany(UserContact::class);
+  }
 
+  public function cartItems(): HasMany
+  {
+    return $this->hasMany(CartItem::class);
+  }
 
-    /**
-     * A user can have many addresses (Home, Work, etc.)
-     */
-    public function addresses(): HasMany
-    {
-        return $this->hasMany(UserAddress::class);
-    }
+  public function reviews(): HasMany
+  {
+    // ✅ added
+    // ✅ added
+    return $this->hasMany(Review::class);
+  }
 
-    /**
-     * A user can have many contact numbers.
-     */
-    public function contacts(): HasMany
-    {
-        return $this->hasMany(UserContact::class);
-    }
+  public function vouchers(): BelongsToMany
+  {
+    return $this->belongsToMany(Voucher::class, 'user_voucher')->withPivot('used_at')->withTimestamps();
+  }
 
-    /**
-     * Get the user's full name.
-     * Usage: $user->full_name
-     */
-    public function getFullNameAttribute(): string
-    {
-        return "{$this->fname} {$this->lname}";
-    }
+  // ---- Accessors ----
 
-    /**
-     * Get all of the cart items for the user.
-     */
-    public function cartItems(): HasMany
-    {
-        return $this->hasMany(CartItem::class);
-    }
+  public function getFullNameAttribute(): string
+  {
+    return "{$this->fname} {$this->lname}";
+  }
 
-    /**
-     * Accessor for cart_item_count.
-     * Usage: $user->cart_item_count
-     */
-    public function getCartItemCountAttribute(): int
-    {
-        // sum('quantity') gives you the total items (e.g., 2 shirts + 1 hat = 3)
-        // count() gives you total unique rows (e.g., 2 shirts + 1 hat = 2)
-        return (int) $this->cartItems()->sum('quantity');
-    }
+  public function getCartItemCountAttribute(): int
+  {
+    return (int) $this->cartItems()->sum('quantity');
+  }
 
-    /**
-     * Get the vouchers assigned specifically to this user.
-     */
-    public function vouchers(): BelongsToMany
-    {
-        return $this->belongsToMany(Voucher::class, 'user_voucher')
-                    ->withPivot('used_at')
-                    ->withTimestamps();
-    }
+  // ---- Lifecycle Hooks ----
 
+  protected static function booted(): void
+  {
+    static::deleting(function (User $user) {
+      // 🗑️ Hard delete ephemeral data
+      $user->cartItems()->delete();
+      $user->notifications()->delete();
+      $user->addresses()->delete(); // ✅ clean up addresses
+      $user->contacts()->delete(); // ✅ clean up contacts
+
+      // 🔒 Anonymize reviews — preserve ratings/comments but remove identity
+      $user->reviews()->update(['user_id' => null]);
+
+      // ✅ Orders & returns are preserved as-is for financial records
+    });
+  }
 }

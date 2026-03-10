@@ -69,6 +69,8 @@ export interface ProductVariant {
   discounts?: Discount[];
   reviews?: Review[]; // If you're eager loading reviews
   reviewsCount?: number;
+  avgUnitCost: number;
+  suggestedPrice: number;
 }
 
 export interface CheckoutItem {
@@ -141,6 +143,7 @@ export interface Review {
     id: number;
     name: string;
     sku: string;
+    imagePath: string | null;
   };
   isPublished: boolean;
   relativeTime: string;
@@ -151,21 +154,32 @@ export interface Review {
 }
 
 // This replaces your manual "Home" | "Office" | "Other" definition
+export interface ServiceableArea {
+  id: number;
+  barangay: string;
+  city: string;
+  province: string;
+  isActive: boolean;
+}
 
 export interface AddressDetails {
   id: number;
   type: AddressDetailsType;
-  fullAddress: string;
+  streetAddress: string; // house/bldg/street line
+  fullAddress: string; // computed: streetAddress + barangay + city
   contactNumber: string;
   contactPerson: string;
   isDefault: boolean;
   userId: number;
+  serviceableAreaId: number | null;
+  serviceableArea: ServiceableArea | null;
   user?: User;
 }
 
 export interface AddressPayload {
   type: AddressDetailsType;
-  full_address: string;
+  serviceable_area_id: number | null;
+  street_address: string;
   contact_person: string;
   contact_number: string;
   is_default?: boolean;
@@ -184,7 +198,7 @@ export interface NavItem {
   icon?: string;
 }
 
-export type PaymentType = 'cod' | 'paypal' | 'gcash' | 'paymaya' | 'cc';
+export type PaymentType = 'cod' | 'gcash' | 'paymaya' | 'credit_card';
 
 export interface PaymentMethod {
   id: string;
@@ -241,9 +255,13 @@ export interface Supplier {
   address?: string | null;
 }
 
-export type InventoryMovementType = 'purchase' | 'sale' | 'customer_return' | 'purchase_return' | 'adjustment';
+export const INV_MOVEMENT_TYPES = ['purchase', 'sale', 'customer_return', 'purchase_return', 'adjustment'] as const;
 
-export type InventoryMovementStatus = 'available' | 'quarantine' | 'damaged' | 'lost';
+export type InventoryMovementType = (typeof INV_MOVEMENT_TYPES)[number];
+
+export const INV_MOVEMENT_STATUS = ['available', 'damaged', 'lost', 'quarantine'] as const;
+
+export type InventoryMovementStatus = (typeof ADJUSTMENT_STATUS)[number];
 
 export interface InventoryMovement {
   id: number;
@@ -263,6 +281,117 @@ export interface InventoryMovement {
   updatedAt: string;
   reason?: string;
   reference?: string;
+}
+
+export interface PriceHistory {
+  id: number;
+  variantId: number;
+  old_price: number;
+  new_price: number;
+  margin_at_time: number;
+  reason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaymentStatusType = 'paid' | 'unpaid' | 'refunded';
+
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned';
+
+export interface OrderItem {
+  id: number;
+  orderId: number;
+  productVariantId: number | null;
+  productName: string;
+  variantName: string;
+  variantAttributes: Record<string, string> | null;
+  quantity: number;
+  priceAtPurchase: number;
+  discountAtPurchase: number;
+  lineTotal: number;
+  variant?: ProductVariant | null;
+}
+
+export interface OrderReturn {
+  id: number;
+  returnNumber: string;
+  status: string;
+  adminNote: string | null;
+  createdAt: string;
+  items?: ReturnItem[];
+}
+
+export interface ReturnItem {
+  id: number;
+  productName: string;
+  variantName: string;
+  quantity: number;
+  reason: string;
+  condition: 'pending_inspection' | 'sellable' | 'damaged';
+  resolution: 'pending' | 'refund' | 'replacement';
+  isRestocked: boolean;
+  variant?: ProductVariant | null;
+}
+
+export interface OrderDetails {
+  id: number;
+  orderNumber: string;
+  userId: number;
+  addressId: number | null;
+
+  shippingContactPerson: string;
+  shippingContactNumber: string;
+  shippingFullAddress: string;
+
+  voucherCode: string | null;
+  voucherDiscount: number;
+
+  itemsSubtotal: number;
+  shippingFee: number;
+  finalTotal: number;
+
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentType;
+
+  deliveryType: DeliveryType;
+  deliverySchedule: {
+    date: string;
+    time: string;
+  } | null;
+
+  notes: string | null;
+
+  paymongoSourceId?: string | null;
+  paymongoPaymentId?: string | null;
+
+  isCancellable: boolean;
+  isReturnable: boolean;
+
+  createdAt: string;
+  relativeTime: string;
+  updatedAt: string;
+
+  items?: OrderItem[];
+  returns?: OrderReturn[];
+  address?: AddressDetails | null;
+  user?: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'received' | 'completed' | 'cancelled';
+
+export interface OrderReturn {
+  id: number;
+  returnNumber: string;
+  orderId: number; // added
+  orderNumber: string; // added — from eager loaded order
+  status: ReturnStatus; // typed properly
+  adminNote: string | null;
+  createdAt: string;
+  items?: ReturnItem[];
 }
 
 /* auth types..
@@ -333,6 +462,7 @@ export interface Meta {
     active: boolean;
   }[];
 }
+
 export interface PaginatedResponse<T> {
   data: T[];
   links: {

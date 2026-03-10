@@ -1,15 +1,16 @@
 import AddressList from '@/components/store/profile/AddressList';
 import ProfileLayout from '@/layouts/profile/layout';
-import { AddressDetails } from '@/types/store';
+import { AddressDetails, ServiceableArea } from '@/types/store';
 
 interface AddressesProps {
     addresses: AddressDetails[];
+    serviceableAreas: ServiceableArea[];
 }
 
-const Addresses = ({ addresses }: AddressesProps) => {
-    return <AddressList addresses={addresses} />;
+const Addresses = ({ addresses, serviceableAreas }: AddressesProps) => {
+    return <AddressList addresses={addresses} serviceableAreas={serviceableAreas} />;
 };
 
-Addresses.layout = (page: React.ReactNode) => <ProfileLayout children={page} />;
+Addresses.layout = (page: React.ReactNode) => <ProfileLayout>{page}</ProfileLayout>;
 
 export default Addresses;

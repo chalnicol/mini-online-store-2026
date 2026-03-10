@@ -58,35 +58,27 @@ class ProductController extends Controller
       'is_published' => $validated['is_published'],
     ]);
 
-    return to_route('admin.products')->with(
-      'success',
-      'Product created successfully!',
-    );
+    return to_route('admin.products')->with('success', 'Product created successfully!');
   }
 
   public function show(Product $product)
   {
     return Inertia::render('admin/products/show', [
-      'product' => new ProductResource(
-        $product->load(['variants', 'publishedReviews.user', 'category']),
-      ),
+      'product' => new ProductResource($product->load(['variants', 'publishedReviews.user', 'category'])),
     ]);
   }
 
   public function edit(Product $product)
   {
     return Inertia::render('admin/products/edit', [
-      'product' => new ProductResource(
-        $product->load(['variants', 'category']),
-      ),
+      'product' => new ProductResource($product->load(['variants', 'category'])),
     ]);
   }
 
   public function update(Request $request, Product $product)
   {
     $validated = $request->validate([
-      'name' =>
-        'required|string|min:5|max:50|unique:products,name,' . $product->id,
+      'name' => 'required|string|min:5|max:50|unique:products,name,' . $product->id,
       'category_id' => 'required|integer|exists:categories,id',
       'description' => 'nullable|string',
       'is_published' => 'nullable|boolean',
@@ -94,16 +86,12 @@ class ProductController extends Controller
 
     // Check if they are trying to publish WITHOUT active variants
     if (($validated['is_published'] ?? false) == true) {
-      $hasActiveVariants = $product
-        ->variants()
-        ->where('is_active', true)
-        ->exists();
+      $hasActiveVariants = $product->variants()->where('is_active', true)->exists();
 
       if (!$hasActiveVariants) {
         return back()
           ->withErrors([
-            'is_published' =>
-              'Cannot publish: This product has no active variants.',
+            'is_published' => 'Cannot publish: This product has no active variants.',
           ])
           ->withInput();
       }
@@ -117,35 +105,25 @@ class ProductController extends Controller
       'is_published' => $validated['is_published'] ?? false,
     ]);
 
-    return to_route('admin.products')->with(
-      'success',
-      'Product updated successfully!',
-    );
+    return to_route('admin.products.show', $product->id)->with('success', 'Product updated successfully!');
   }
 
   public function destroy(Product $product)
   {
     $product->delete();
 
-    return to_route('admin.products')->with(
-      'success',
-      'The product has been deleted succesfully!',
-    );
+    return to_route('admin.products')->with('success', 'The product has been deleted succesfully!');
   }
 
   public function togglePublishedStatus(Product $product)
   {
     // If currently UNPUBLISHED, we are trying to PUBLISH it
     if (!$product->is_published) {
-      $hasActiveVariants = $product
-        ->variants()
-        ->where('is_active', true)
-        ->exists();
+      $hasActiveVariants = $product->variants()->where('is_active', true)->exists();
 
       if (!$hasActiveVariants) {
         return back()->withErrors([
-          'product' =>
-            'There must be at least one active variant to publish this product.',
+          'product' => 'There must be at least one active variant to publish this product.',
         ]);
       }
     }

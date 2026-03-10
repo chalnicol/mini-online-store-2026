@@ -84,6 +84,7 @@ const PurchaseForm = ({ inventory }: { inventory?: InventoryMovement | null }) =
             </div>
           )}
           addLink={'/admin/products/create'}
+          maxRows={2}
         />
       </div>
 
@@ -126,6 +127,7 @@ const PurchaseForm = ({ inventory }: { inventory?: InventoryMovement | null }) =
               </div>
             )}
             addLink={'/admin/suppliers/create'}
+            maxRows={2}
           />
         </div>
       </div>
@@ -138,7 +140,7 @@ const PurchaseForm = ({ inventory }: { inventory?: InventoryMovement | null }) =
           onChange={(e) => setData('update_price_instantly', e.target.checked)}
           className="aspect-square w-4 accent-sky-900"
         />
-        <label htmlFor="update_price">Automatically update selling price to maintain 30% margin</label>
+        <label htmlFor="update_price">Automatically update selling price to maintain 30% markup</label>
       </div>
 
       <CustomButton

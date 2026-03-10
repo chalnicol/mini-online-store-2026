@@ -7,50 +7,45 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReviewResource extends JsonResource
 {
-	/**
-	 * Transform the resource into an array.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function toArray(Request $request): array
-	{
-		// return parent::toArray($request);
+  public function toArray(Request $request): array
+  {
+    return [
+      'id' => $this->id,
+      'rating' => (int) $this->rating,
+      'comment' => $this->comment,
+      'createdAt' => $this->created_at->format('M d, Y'),
+      'relativeTime' => $this->updated_at ? $this->updated_at->diffForHumans() : $this->created_at->diffForHumans(),
+      'isPublished' => (bool) $this->is_published,
+      'isUpdated' => $this->updated_at->ne($this->created_at), // ✅ safer than !=
 
-		return [
-			'id' => $this->id,
-			'rating' => (int) $this->rating,
-			'comment' => $this->comment,
-			'createdAt' => $this->created_at->format('M d, Y'),
-			'relativeTime' => $this->updated_at ? $this->updated_at->diffForHumans() : $this->created_at->diffForHumans(),
+      'user' => $this->relationLoaded('user')
+        ? [
+          'id' => $this->user->id ?? null,
+          'name' => $this->user ? (trim("{$this->user->fname} {$this->user->lname}") ?: 'Anonymous') : 'Anonymous', // ✅ handles null user (anonymized)
+          'avatar' => $this->user->profile_photo_url ?? null,
+        ]
+        : null,
 
-			// Use optional() or null coalescing to prevent crashes if relationships aren't loaded
-			'user' => $this->relationLoaded('user')
-				? [
-					'id' => $this->user->id ?? null,
-					'name' => trim(($this->user->fname ?? '') . ' ' . ($this->user->lname ?? '')) ?: 'Anonymous',
-					'avatar' => $this->user->profile_photo_url ?? null,
-				]
-				: null,
+      'product' => $this->relationLoaded('product')
+        ? [
+          'id' => $this->product->id ?? null,
+          'name' => $this->product->name ?? null,
+          'slug' => $this->product->slug ?? null,
+        ]
+        : null,
 
-			'product' => $this->relationLoaded('product')
-				? [
-					'id' => $this->product->id ?? null,
-					'name' => $this->product->name ?? null,
-					'slug' => $this->product->slug ?? null,
-				]
-				: null,
+      'variant' => $this->relationLoaded('variant')
+        ? [
+          'id' => $this->variant->id ?? null,
+          'name' => $this->variant->name ?? null,
+          'sku' => $this->variant->sku ?? null,
+          'imagePath' => $this->variant->image_path ?? null, //
+        ]
+        : null,
 
-			'variant' => $this->relationLoaded('variant')
-				? [
-					// Check if variant actually exists in the DB for this review
-					'id' => $this->variant->id ?? null,
-					'name' => $this->variant->name ?? null,
-					'sku' => $this->variant->sku ?? null,
-				]
-				: null,
-
-			'isPublished' => $this->is_published,
-			'isUpdated' => $this->updated_at != $this->created_at,
-		];
-	}
+      // ✅ Added — needed for user reviews page edit/delete actions
+      'productId' => $this->product_id,
+      'productVariantId' => $this->product_variant_id,
+    ];
+  }
 }

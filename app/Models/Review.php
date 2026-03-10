@@ -1,74 +1,64 @@
 <?php
 
-namespace App\Models;
-
-namespace App\Models;
+namespace App\Models; // ✅ removed duplicate
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // 1. Import the trait
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Review extends Model
 {
-    use HasFactory;
-    
-    protected $fillable = [
-        'product_id', 
-        'product_variant_id', 
-        'user_id', 
-        'rating', 
-        'comment',
-        'is_published'
-    ];
+  use HasFactory, SoftDeletes;
 
-    protected $casts = [
-        'rating' => 'integer',
-        'is_published' => 'boolean',
-    ];
+  protected $fillable = ['product_id', 'product_variant_id', 'user_id', 'rating', 'comment', 'is_published'];
 
-    /**
-     * Get the user who wrote the review.
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+  protected $casts = [
+    'rating' => 'integer',
+    'is_published' => 'boolean',
+  ];
 
-    /**
-     * Get the product being reviewed.
-     */
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class);
-    }
+  // ---- Relationships ----
 
-    public function variant (): BelongsTo
-    {
-        return $this->belongsTo(ProductVariant::class, 'product_variant_id', 'id');
-    }
+  public function user(): BelongsTo
+  {
+    return $this->belongsTo(User::class);
+  }
 
-    public function scopePublished($query)
-    {
-        return $query->where('is_published', true); // or whatever your column is
-    }
+  public function product(): BelongsTo
+  {
+    return $this->belongsTo(Product::class);
+  }
 
-    protected static function booted()
-    {
-        $updateRating = function ($review) {
-            $product = $review->product;
-            if ($product) {
-                // 1. Calculate average only for published reviews
-                $avg = $product->publishedReviews()->avg('rating');
+  public function variant(): BelongsTo
+  {
+    return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+  }
 
-                // Update the cached columns on the product
-                $product->update([
-                    'average_rating' => $avg ?? 0.00,
-                ]);
-            }  
-        };
+  // ---- Scopes ----
 
-        static::created($updateRating);
-        static::deleted($updateRating);
-        static::updated($updateRating);
-    }
+  public function scopePublished($query)
+  {
+    return $query->where('is_published', true);
+  }
+
+  // ---- Lifecycle Hooks ----
+
+  protected static function booted(): void
+  {
+    $updateRating = function (Review $review) {
+      $product = $review->product;
+      if ($product) {
+        $avg = $product->publishedReviews()->avg('rating');
+        $product->update([
+          'average_rating' => $avg ?? 0.0,
+        ]);
+      }
+    };
+
+    static::created($updateRating);
+    static::updated($updateRating); // ✅ covers publish/unpublish toggle
+    static::deleted($updateRating); // ✅ covers soft delete
+    static::restored($updateRating); // ✅ covers restore — recalculate when review comes back
+  }
 }

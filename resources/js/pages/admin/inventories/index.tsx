@@ -13,7 +13,7 @@ import type {
 import { formatDate } from '@/utils/DateUtils';
 import { formatPrice } from '@/utils/PriceUtils';
 import { Link, router } from '@inertiajs/react';
-import { User2Icon } from 'lucide-react';
+import { Book } from 'lucide-react';
 
 const InventoryListing = ({
   inventories,
@@ -37,9 +37,6 @@ const InventoryListing = ({
   ];
 
   const handleOptionsClick = (value: number | string | null) => {
-    if (value == 'add-purchase') {
-      router.visit('/admin/inventories/create-purchase');
-    }
     switch (value) {
       case 'add-purchase':
         router.visit('/admin/inventories/create-purchase');
@@ -63,24 +60,24 @@ const InventoryListing = ({
 
   const inventoryType: Record<InventoryMovementType, { cls: string; label: string }> = {
     purchase: {
-      cls: 'bg-indigo-600 text-white',
+      cls: 'text-sky-900',
       label: 'P',
     },
     customer_return: {
-      cls: 'bg-orange-600',
+      cls: 'text-indigo-500',
       label: 'S',
     },
     purchase_return: {
-      cls: 'bg-info-400',
+      cls: 'text-info-400',
       label: 'R',
     },
     sale: {
-      cls: 'bg-purple-400',
+      cls: 'text-emerald-600',
       label: 'R',
     },
     adjustment: {
-      cls: 'bg-gray-400',
-      label: 'R',
+      cls: 'text-slate-400',
+      label: 'A',
     },
   };
 
@@ -90,7 +87,7 @@ const InventoryListing = ({
       label: 'A',
     },
     damaged: {
-      cls: 'bg-red-600',
+      cls: 'bg-rose-500 text-white',
       label: 'D',
     },
     quarantine: {
@@ -115,50 +112,46 @@ const InventoryListing = ({
       <div>
         {items.length > 0 ? (
           <>
-            <div className="grid gap-2 lg:grid-cols-2">
+            <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => (
                 <Link
                   key={item.id}
                   href={`/admin/inventories/${item.id}`}
                   className="flex flex-col overflow-hidden rounded border border-gray-400 shadow hover:shadow-md"
                 >
-                  <div className="flex justify-between gap-x-2 px-2.5 py-2">
-                    <div className="space-y-1.5">
-                      <p className="space-x-2 text-sm font-bold text-gray-600">
+                  <div className="flex gap-x-3 px-2.5 py-2">
+                    <div className="flex-1 space-y-1">
+                      <p
+                        className={cn('text-[10px] font-bold tracking-widest uppercase', inventoryType[item.type].cls)}
+                      >
+                        {item.type}
+                      </p>
+
+                      {/* product & variant */}
+                      <p className="space-x-2 text-sm font-semibold text-slate-600">
                         <span>{item.variant?.product?.name || 'Product Name'}</span>
                         <span>-</span>
                         <span>{item.variant?.name || 'Variant Name'}</span>
                       </p>
-                      <p className="flex flex-wrap gap-1 text-xs font-semibold text-gray-600">
-                        <span className="space-x-1 rounded border border-gray-400 bg-gray-200 px-2">
-                          {item.quantity} units
-                        </span>
-                        <span className="space-x-1 rounded border border-gray-400 bg-gray-200 px-2">
-                          {formatPrice(item.unitCost)}
-                        </span>
-                        <span className="space-x-1 rounded border border-gray-400 bg-gray-200 px-2">
-                          {item.user?.fname} {item.user?.lname}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p
-                        className={cn(
-                          'flex aspect-square items-center justify-center px-1 text-[10px] font-bold',
-                          inventoryType[item.type].cls,
-                        )}
-                      >
-                        {inventoryType[item.type].label}
-                      </p>
 
-                      <p
-                        className={cn(
-                          'flex aspect-square items-center justify-center px-1 text-[10px] font-bold',
-                          inventoryStatus[item.status].cls,
+                      <div className="flex flex-wrap gap-1 text-[10px] font-semibold">
+                        {item.type == 'purchase' && (
+                          <p className="bg-sky-200 px-1.5 tracking-widest text-gray-700">
+                            {formatPrice(item.unitCost)}
+                          </p>
                         )}
-                      >
-                        {inventoryStatus[item.status].label}
-                      </p>
+                        <p
+                          className={cn(
+                            'bg-gray-200 px-1.5 text-white',
+                            item.quantity < 0 ? 'bg-rose-500' : 'bg-emerald-500',
+                          )}
+                        >
+                          {item.quantity}
+                        </p>
+                        <p className={cn('px-1.5 tracking-widest uppercase', inventoryStatus[item.status].cls)}>
+                          {item.status}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-auto flex justify-between border-t border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-gray-600">
@@ -175,8 +168,8 @@ const InventoryListing = ({
           </>
         ) : (
           <div className="flex flex-col items-center justify-center rounded border border-gray-300 bg-gray-100 py-10 text-center">
-            <User2Icon size={64} className="mb-4 text-gray-300" />
-            <h2 className="text-2xl font-bold text-gray-800">No suppliers found.</h2>
+            <Book size={64} className="mb-4 text-gray-300" />
+            <h2 className="text-2xl font-bold text-gray-800">No Inventory Movements found.</h2>
             <p className="mb-6 text-gray-500">Server may be down. Please try again later.</p>
           </div>
         )}

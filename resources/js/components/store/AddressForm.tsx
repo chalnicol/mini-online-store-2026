@@ -1,176 +1,199 @@
 import { ADDRESS_TYPES, AddressDetailsType, formRules } from '@/data';
-import { type AddressDetails, type AddressPayload } from '@/types/store';
-
+import { type AddressDetails, type AddressPayload, type ServiceableArea } from '@/types/store';
 import { useForm } from '@inertiajs/react';
-import { Check } from 'lucide-react';
+import { AlertTriangle, Check } from 'lucide-react';
 import CheckButton from './CheckButton';
 import CustomButton from './CustomButton';
 import PromptMessage from './PromptMessage';
 import TextInput from './TextInput';
 
 interface AddressFormProps {
-    data: AddressDetails | null;
-    keys?: string[];
-    onCancel: () => void;
-    onSuccess: (props: any) => void;
+  data: AddressDetails | null;
+  keys?: string[];
+  serviceableAreas: ServiceableArea[];
+  onCancel: () => void;
+  onSuccess: (props: any) => void;
 }
 
-const AddressForm: React.FC<AddressFormProps> = ({
-    data,
-    keys,
-    onCancel,
-    onSuccess,
-}) => {
-    const {
-        data: form,
-        setData,
-        processing,
-        errors,
-        hasErrors,
-        clearErrors,
-        reset,
-        post,
-        patch,
-    } = useForm<AddressPayload>({
-        full_address: data?.fullAddress || '',
-        contact_number: data?.contactNumber || '',
-        contact_person: data?.contactPerson || '',
-        type: data?.type || 'Home',
-        is_default: data?.isDefault || false,
-    });
+const AddressForm: React.FC<AddressFormProps> = ({ data, keys, serviceableAreas, onCancel, onSuccess }) => {
+  const {
+    data: form,
+    setData,
+    processing,
+    errors,
+    hasErrors,
+    clearErrors,
+    post,
+    patch,
+  } = useForm<AddressPayload>({
+    serviceable_area_id: data?.serviceableAreaId ?? null,
+    street_address: data?.streetAddress ?? '',
+    contact_person: data?.contactPerson ?? '',
+    contact_number: data?.contactNumber ?? '',
+    type: data?.type ?? 'Home',
+    is_default: data?.isDefault ?? false,
+  });
 
-    const mode = data ? 'edit' : 'add';
+  const mode = data ? 'edit' : 'add';
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+  const selectedArea = serviceableAreas.find((a) => a.id === form.serviceable_area_id) ?? null;
 
-        const baseOptions: any = {
-            onBefore: () => clearErrors(),
-            onSuccess: (page: any) => onSuccess(page.props),
-            ...(mode === 'edit' && { preserveScroll: true }),
-            ...(keys && keys.length > 0 && { keys }),
-        };
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-        if (mode === 'add') {
-            post('/profile/addresses', baseOptions);
-            //..
-        } else {
-            patch(`/profile/addresses/${data?.id}`, baseOptions);
-        }
+    const baseOptions: any = {
+      onBefore: () => clearErrors(),
+      onSuccess: (page: any) => onSuccess(page.props),
+      ...(mode === 'edit' && { preserveScroll: true }),
+      ...(keys && keys.length > 0 && { keys }),
     };
 
-    const handleSelectAddressType = (type: AddressDetailsType) => {
-        setData('type', type);
-    };
+    if (mode === 'add') {
+      post('/profile/addresses', baseOptions);
+    } else {
+      patch(`/profile/addresses/${data?.id}`, baseOptions);
+    }
+  };
 
-    const toggleDefault = () => {
-        setData('is_default', !form.is_default);
-    };
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setData(name as keyof AddressPayload, value);
+  };
 
-    const handleFormChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    ) => {
-        const { name, value } = e.target;
-        setData(name as keyof AddressPayload, value as string);
-    };
+  return (
+    <div>
+      {hasErrors && <PromptMessage type="error" errors={errors} className="mb-3" />}
 
-    return (
-        <div>
-            {hasErrors && (
-                <PromptMessage
-                    type="error"
-                    // message={error.message}
-                    errors={errors}
-                    className="mt-1 mb-3"
-                />
-            )}
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <div className="grid grid-cols-3 text-sm">
+          {ADDRESS_TYPES.map((type, index) => {
+            const isActive = form.type === type;
+            const isFirst = index === 0;
+            const isLast = index === ADDRESS_TYPES.length - 1;
 
-            <form
-                onSubmit={handleSubmit}
-                className="space-y-2.5 rounded-b bg-white"
-            >
-                <div className="">
-                    <div className="grid grid-cols-3 text-sm">
-                        {ADDRESS_TYPES.map((type, index) => {
-                            const isActive = form.type === type;
-                            const isFirst = index === 0;
-                            const isLast = index === ADDRESS_TYPES.length - 1;
-
-                            return (
-                                <button
-                                    key={type}
-                                    className={`flex items-center justify-center gap-x-1 border border-gray-400 px-3 py-0.5 font-semibold ${isFirst ? 'rounded-l' : ''} ${isLast ? 'rounded-r' : ''} ${!isLast ? 'border-e-0' : ''} ${
-                                        isActive
-                                            ? 'bg-gray-200 text-gray-700'
-                                            : 'cursor-pointer bg-white shadow hover:bg-gray-100'
-                                    }`}
-                                    onClick={() =>
-                                        handleSelectAddressType(type)
-                                    }
-                                    disabled={isActive}
-                                >
-                                    {isActive && <Check size={14} />}
-                                    {type}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <TextInput
-                    type="text"
-                    // label="Contact Person"
-                    name="contact_person"
-                    value={form.contact_person}
-                    onChange={handleFormChange}
-                    placeholder="contact person"
-                    required={true}
-                    rules={formRules.contactPerson}
-                />
-                <TextInput
-                    type="text"
-                    // label="Contact Number"
-                    name="contact_number"
-                    value={form.contact_number}
-                    onChange={handleFormChange}
-                    placeholder="contact number"
-                    required={true}
-                    rules={formRules.contactNumber}
-                />
-                <textarea
-                    value={form.full_address}
-                    name="full_address"
-                    placeholder="full address line"
-                    onChange={handleFormChange}
-                    required={true}
-                    className="block w-full rounded border border-gray-500 bg-white px-2 py-1 focus:ring-1 focus:ring-sky-900 focus:outline-none"
-                ></textarea>
-
-                <CheckButton
-                    label="Set as Default"
-                    onChange={toggleDefault}
-                    checked={form.is_default || false}
-                    disabled={processing}
-                />
-
-                <div className="mt-4 flex items-center space-x-1.5">
-                    <CustomButton
-                        type="button"
-                        label="Cancel"
-                        color="secondary"
-                        onClick={onCancel}
-                        disabled={processing}
-                    />
-                    <CustomButton
-                        type="submit"
-                        label={!data ? 'Submit' : 'Update'}
-                        color="primary"
-                        loading={processing}
-                        disabled={processing}
-                    />
-                </div>
-            </form>
+            return (
+              <button
+                key={type}
+                type="button"
+                disabled={isActive}
+                onClick={() => setData('type', type as AddressDetailsType)}
+                className={`flex items-center justify-center gap-x-1 border border-gray-400 px-3 py-0.5 font-semibold ${isFirst ? 'rounded-l' : ''} ${isLast ? 'rounded-r' : ''} ${!isLast ? 'border-e-0' : ''} ${
+                  isActive ? 'bg-gray-200 text-gray-700' : 'cursor-pointer bg-white shadow hover:bg-gray-100'
+                }`}
+              >
+                {isActive && <Check size={14} />}
+                {type}
+              </button>
+            );
+          })}
         </div>
-    );
+
+        <div className="grid grid-cols-1 gap-x-3 gap-y-2.5 md:grid-cols-[1fr_1fr]">
+          {/* Right side — rest of the form */}
+          <div className="space-y-2.5">
+            {/* Address Type */}
+
+            <TextInput
+              label="Contact Person"
+              type="text"
+              name="contact_person"
+              value={form.contact_person}
+              onChange={handleFormChange}
+              //   placeholder="Contact person"
+              required
+              rules={formRules.contactPerson}
+            />
+
+            <TextInput
+              label="Contact Number"
+              type="text"
+              name="contact_number"
+              value={form.contact_number}
+              onChange={handleFormChange}
+              //   placeholder="Contact number"
+              required
+              rules={formRules.contactNumber}
+            />
+
+            <div className="space-y-1">
+              <p className="text-[10px] tracking-widest text-slate-500 uppercase">House no., Building, Street name</p>
+              <textarea
+                name="street_address"
+                value={form.street_address}
+                onChange={handleFormChange}
+                // placeholder="House no., Building, Street name..."
+                required
+                rows={3}
+                className="block w-full resize-none rounded border border-gray-500 bg-white px-2 py-1 text-sm focus:ring-1 focus:ring-sky-900 focus:outline-none"
+              />
+            </div>
+
+            <CheckButton
+              label="Set as Default"
+              onChange={() => setData('is_default', !form.is_default)}
+              checked={form.is_default ?? false}
+              disabled={processing}
+            />
+          </div>
+          {/* Barangay Picker — top on small, left column on larger */}
+          <div className="order-first space-y-1 md:order-last">
+            <p className="text-[10px] tracking-widest text-slate-500 uppercase">Barangay</p>
+            <div className="h-[192px] overflow-y-auto rounded border border-gray-400 bg-white">
+              {serviceableAreas.length > 0 ? (
+                serviceableAreas.map((area) => {
+                  const isSelected = form.serviceable_area_id === area.id;
+                  return (
+                    <button
+                      key={area.id}
+                      type="button"
+                      disabled={!area.isActive}
+                      onClick={() => setData('serviceable_area_id', area.id)}
+                      className={`w-full border-b border-gray-300 px-2 py-1.5 text-left text-xs last:border-0 odd:bg-white even:bg-gray-100 ${
+                        isSelected
+                          ? 'bg-sky-900 font-semibold text-white'
+                          : area.isActive
+                            ? 'cursor-pointer text-gray-700 hover:bg-gray-50'
+                            : 'cursor-not-allowed text-gray-400 line-through'
+                      }`}
+                    >
+                      <p>{area.barangay}</p>
+                      <span className={`block text-[10px] ${isSelected ? 'text-sky-200' : 'text-gray-400'}`}>
+                        {area.city}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="flex h-full items-center justify-center p-3 text-center">
+                  <p className="text-xs text-gray-400">No areas available.</p>
+                </div>
+              )}
+            </div>
+
+            {selectedArea && !selectedArea.isActive && (
+              <div className="mt-1 flex items-start gap-1 rounded border border-amber-300 bg-amber-50 px-2 py-1.5">
+                <AlertTriangle size={12} className="mt-0.5 flex-none text-amber-500" />
+                <p className="text-[10px] text-amber-700">
+                  Area not serviceable yet. You can save but cannot use at checkout.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center gap-1.5">
+          <CustomButton type="button" label="Cancel" color="secondary" onClick={onCancel} disabled={processing} />
+          <CustomButton
+            type="submit"
+            label={mode === 'add' ? 'Submit' : 'Update'}
+            color="primary"
+            loading={processing}
+            disabled={processing}
+          />
+        </div>
+      </form>
+    </div>
+  );
 };
+
 export default AddressForm;

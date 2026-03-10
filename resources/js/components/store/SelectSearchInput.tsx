@@ -124,6 +124,14 @@ const SelectSearchInput = <T extends Identifiable>({
     <div className={cn('space-y-1.5', className)}>
       <div className="relative">
         <div className="group flex divide-x divide-gray-400 overflow-hidden rounded border border-gray-400 bg-white focus-within:ring-1 focus-within:ring-sky-900">
+          {addLink && (
+            <Link
+              href={addLink}
+              className="block flex items-center justify-center bg-gray-200 px-3 text-xs font-bold tracking-wider text-gray-500 uppercase hover:bg-gray-100"
+            >
+              + NEW
+            </Link>
+          )}
           <input
             type="text"
             value={search}
@@ -139,14 +147,6 @@ const SelectSearchInput = <T extends Identifiable>({
             >
               Clear
             </button>
-          )}
-          {addLink && (
-            <Link
-              href={addLink}
-              className="block flex items-center justify-center bg-gray-200 px-3 text-xs font-bold tracking-wider text-gray-500 uppercase hover:bg-gray-100"
-            >
-              + NEW
-            </Link>
           )}
         </div>
         {search.length > 0 && (

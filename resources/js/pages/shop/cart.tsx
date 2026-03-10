@@ -25,8 +25,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
 
   // Use displayItems (from Laravel) for UI calculations
   const isChecked = displayItems.some((item) => item.isChecked);
-  const allChecked =
-    displayItems.length > 0 && displayItems.every((item) => item.isChecked);
+  const allChecked = displayItems.length > 0 && displayItems.every((item) => item.isChecked);
   const selectedCount = displayItems.filter((item) => item.isChecked).length;
 
   const [toDeleteSelected, setToDeleteSelected] = useState<boolean>(false);
@@ -37,16 +36,9 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
         <TitleBar title="Cart" className="mb-4" />
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <ShoppingBag size={64} className="mb-4 text-gray-300" />
-          <h2 className="text-2xl font-bold text-gray-800">
-            Your cart is empty
-          </h2>
-          <p className="mb-6 text-gray-500">
-            Looks like you haven't added anything yet.
-          </p>
-          <Link
-            href="/"
-            className="rounded-lg bg-sky-900 px-6 py-2 font-semibold text-white hover:bg-sky-800"
-          >
+          <h2 className="text-2xl font-bold text-gray-800">Your cart is empty</h2>
+          <p className="mb-6 text-gray-500">Looks like you haven't added anything yet.</p>
+          <Link href="/" className="rounded-lg bg-sky-900 px-6 py-2 font-semibold text-white hover:bg-sky-800">
             Go Shopping
           </Link>
         </div>
@@ -70,6 +62,10 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
       removeFromCart(toDeleteId || 0);
     }
     handleCloseConfirmation();
+  };
+
+  const handleCheckout = () => {
+    router.visit('/checkout?source=cart');
   };
 
   const item = displayItems.find((i) => i.id === toDeleteId);
@@ -98,11 +94,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
                   onChange={(e) => toggleAll(e.target.checked)}
                   className="h-4 w-4 cursor-pointer rounded accent-sky-900"
                 />
-                <label
-                  htmlFor="select-all"
-                  className="text-sm font-semibold text-gray-500"
-                  title="Select All"
-                >
+                <label htmlFor="select-all" className="text-sm font-semibold text-gray-500" title="Select All">
                   SELECT ALL {selectedCount > 0 ? `(${selectedCount})` : ''}
                 </label>
               </div>
@@ -120,11 +112,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
 
             <div>
               {displayItems.map((item) => (
-                <CartItemCard
-                  key={item.id}
-                  item={item}
-                  onDelete={(id) => setToDeleteId(id)}
-                />
+                <CartItemCard key={item.id} item={item} onDelete={(id) => setToDeleteId(id)} />
               ))}
             </div>
           </div>
@@ -146,19 +134,10 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
 
               <div className="space-y-2">
                 {unavailableProducts.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between"
-                  >
-                    <Link
-                      href={`/products/${item.variant.product?.slug}`}
-                      className="flex gap-x-2"
-                    >
+                  <div key={item.id} className="flex items-center justify-between">
+                    <Link href={`/products/${item.variant.product?.slug}`} className="flex gap-x-2">
                       <img
-                        src={
-                          item.variant.imagePath ||
-                          'https://placehold.co/600x400?text=No+Image+Available'
-                        }
+                        src={item.variant.imagePath || 'https://placehold.co/600x400?text=No+Image+Available'}
                         alt={item.variant.name}
                         className="aspect-square h-16 flex-shrink-0 rounded-md border object-cover"
                       />
@@ -166,9 +145,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
                         <h3 className="line-clamp-1 leading-tight font-bold text-gray-900">
                           {item.variant.product?.name || 'No Product Name'}
                         </h3>
-                        <p className="text-sm font-medium text-gray-500">
-                          {item.variant.name}
-                        </p>
+                        <p className="text-sm font-medium text-gray-500">{item.variant.name}</p>
                       </div>
                     </Link>
                   </div>
@@ -185,8 +162,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
             <div className="mt-2 flex flex-grow flex-col space-y-3">
               <div className="flex justify-between">
                 <p>
-                  Subtotal{' '}
-                  <span className="text-sm">({displayItems.length} items)</span>
+                  Subtotal <span className="text-sm">({displayItems.length} items)</span>
                 </p>
                 <p className="font-bold">{formatPrice(subtotal)}</p>
               </div>
@@ -207,17 +183,14 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
               <div className="flex gap-2 border-y border-gray-400 py-2 text-sky-800">
                 <Book size={22} className="mt-1 flex-shrink-0" />
                 <span className="text-sm">
-                  Shipping fee and vouchers applied at checkout. Free shipping
-                  on orders over ₱300!
+                  Shipping fee and vouchers applied at checkout. Free shipping on orders over ₱300!
                 </span>
               </div>
 
               <div className="mt-auto">
                 <div className="flex justify-between py-2">
                   <p>Total</p>
-                  <p className="text-lg font-bold text-sky-900">
-                    {formatPrice(subtotal)}
-                  </p>
+                  <p className="text-lg font-bold text-sky-900">{formatPrice(subtotal)}</p>
                 </div>
 
                 <CustomButton
@@ -226,7 +199,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
                   color="primary"
                   size="lg"
                   disabled={!isChecked}
-                  onClick={() => router.visit('/checkout')}
+                  onClick={handleCheckout}
                   className="w-full"
                 />
               </div>
@@ -239,9 +212,7 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
         <ConfirmationModal
           onClose={handleCloseConfirmation}
           onConfirm={handleConfirmDelete}
-          message={`Are you sure you want to remove ${
-            toDeleteSelected ? 'selected items' : 'this item'
-          } from cart?`}
+          message={`Are you sure you want to remove ${toDeleteSelected ? 'selected items' : 'this item'} from cart?`}
           details={toDeleteItem}
         />
       )}
@@ -249,8 +220,6 @@ const Cart = ({ products, unavailableProducts, subtotal }: CartProps) => {
   );
 };
 
-Cart.layout = (page: React.ReactNode) => (
-  <CustomLayout showFilterSearch={true}>{page}</CustomLayout>
-);
+Cart.layout = (page: React.ReactNode) => <CustomLayout showFilterSearch={true}>{page}</CustomLayout>;
 
 export default Cart;

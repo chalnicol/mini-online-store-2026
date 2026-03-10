@@ -1,3 +1,4 @@
+import { inventoryMovementReasons } from '@/data';
 import { cn } from '@/lib/utils';
 import { InventoryMovementStatus, ProductVariant } from '@/types/store';
 import { useForm } from '@inertiajs/react';
@@ -7,25 +8,15 @@ import PromptMessage from '../../PromptMessage';
 import SelectSearchInput from '../../SelectSearchInput';
 import TextInput from '../../TextInput';
 
-const ADJUSTMENT_TYPES = ['Increment', 'Decrement'] as const;
-
-type AdjustmentType = (typeof ADJUSTMENT_TYPES)[number];
-
-interface AddPayload {
-  product_variant_id: number;
-  amount: number;
-  status: InventoryMovementStatus;
-  reason: string;
-  adjustmentType: AdjustmentType;
-}
+type AdjustmentType = 'increment' | 'decrement';
 
 const AdjustmentForm = () => {
-  const { data, setData, post, processing, hasErrors, clearErrors, errors } = useForm<AddPayload>({
+  const { data, setData, post, processing, hasErrors, clearErrors, errors } = useForm({
     product_variant_id: 0,
     amount: 0,
     status: 'available',
     reason: '',
-    adjustmentType: 'Increment',
+    type: 'increment',
   });
 
   const [variant, setVariant] = useState<ProductVariant | null>(null);
@@ -34,23 +25,27 @@ const AdjustmentForm = () => {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    post(`/admin/inventories/storeAdjustment`, {
+    post(`/admin/inventories/adjustment`, {
       onBefore: () => clearErrors(),
     });
   };
 
-  const adjustmentReasons: string[] = [
-    'Physical Inventory Count',
-    'Damaged on Shell',
-    'Theft or Loss',
-    'Data Entry Correction',
-    'Found Item in Warehouse',
-  ];
-
   const handleReasonClick = (index: number) => {
     setSelectedReasonValue(index);
-    setData('reason', `${adjustmentReasons[index]}`);
+    setData('reason', inventoryMovementReasons[index]);
   };
+
+  const types: { label: string; value: AdjustmentType }[] = [
+    { label: 'Increment', value: 'increment' },
+    { label: 'Decrement', value: 'decrement' },
+  ];
+
+  const status: { label: string; value: InventoryMovementStatus }[] = [
+    { label: 'Available', value: 'available' },
+    { label: 'Damaged', value: 'damaged' },
+    { label: 'Quarantine', value: 'quarantine' },
+    { label: 'Lost', value: 'lost' },
+  ];
 
   return (
     <form onSubmit={submit} className="space-y-4 py-1">
@@ -58,22 +53,22 @@ const AdjustmentForm = () => {
 
       {/* amount */}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-1">
           <p className="text-[10px] tracking-wider uppercase">Adjustment Type</p>
 
           <div className="grid grid-cols-2 divide-x divide-gray-400 rounded border border-gray-400">
-            {ADJUSTMENT_TYPES.map((type, i) => (
+            {types.map((type) => (
               <button
-                key={i}
+                key={type.value}
                 type="button"
                 className={cn(
                   'cursor-pointer bg-gray-200 px-2 py-1 text-gray-600 shadow-md first:rounded-l last:rounded-r disabled:cursor-default disabled:bg-sky-900 disabled:text-white disabled:shadow-none',
                 )}
-                disabled={processing || data.adjustmentType == type}
-                onClick={() => setData('adjustmentType', type)}
+                disabled={processing || data.type == type.value}
+                onClick={() => setData('type', type.value)}
               >
-                {type}
+                {type.label}
               </button>
             ))}
           </div>
@@ -84,9 +79,44 @@ const AdjustmentForm = () => {
           type="text"
           name="status"
           value={data.amount}
-          onChange={(e) => setData('amount', parseInt(e.target.value))}
+          onChange={(e) => setData('amount', Number(e.target.value) || 0)}
           required
         />
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-[10px] tracking-wider uppercase">Select Status</p>
+
+        <div className="grid max-h-28 grid-cols-1 gap-2 overflow-y-auto rounded border border-gray-400 bg-white p-2 sm:grid-cols-2 lg:grid-cols-4">
+          {status.map((status) => (
+            <button
+              key={status.value}
+              value={status.value}
+              className="cursor-pointer rounded border border-gray-400 bg-gray-100 px-2 py-1 text-left text-sm shadow-md transition-colors duration-300 hover:bg-gray-50 disabled:cursor-default disabled:bg-sky-900 disabled:font-semibold disabled:text-white disabled:shadow-none md:text-base"
+              disabled={processing || data.status == status.value}
+              onClick={() => setData('status', status.value)}
+            >
+              {status.label}
+            </button>
+          ))}
+        </div>
+        {/* <select
+          name="status"
+          value={data.status}
+          onChange={(e) => setData('status', e.target.value)}
+          className="w-full rounded border border-gray-400 bg-gray-200 px-2 py-1 text-gray-600 outline-none focus:ring-1 focus:ring-sky-900"
+        >
+          {status.map((status) => (
+            <option
+              key={status.value}
+              value={status.value}
+              className="bg-white hover:bg-sky-50 disabled:bg-gray-100 disabled:text-gray-800"
+              disabled={processing || data.status == status.value}
+            >
+              {status.label}
+            </option>
+          ))}
+        </select> */}
       </div>
 
       {/* select search */}
@@ -115,6 +145,7 @@ const AdjustmentForm = () => {
               <p className="rounded border border-gray-400 px-2 text-xs font-semibold text-slate-400">{value.name}</p>
             </div>
           )}
+          maxRows={2}
           addLink={'/admin/products/create'}
         />
       </div>
@@ -127,9 +158,11 @@ const AdjustmentForm = () => {
             value={data.reason}
             onChange={(e) => setData('reason', e.target.value)}
             className="w-full rounded border border-gray-400 bg-white px-3 py-1 outline-none"
+            required
+            rows={3}
           ></textarea>
           <div className="flex flex-wrap gap-2">
-            {adjustmentReasons.map((reason, i) => (
+            {inventoryMovementReasons.map((reason, i) => (
               <button
                 key={i}
                 type="button"

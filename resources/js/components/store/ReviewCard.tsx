@@ -24,17 +24,21 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, size = 'md', className 
     <>
       {size === 'md' && (
         <div className={cn('space-y-1.5', cls, paddingCls[size], className)}>
-          <div className="flex items-center gap-x-2">
-            <div className="flex aspect-square items-center justify-center overflow-hidden rounded-full border border-gray-400 px-1">
-              <User size={21} />
+          <div className="flex flex-col items-start justify-between gap-y-1 sm:flex-row">
+            <div className="flex items-center gap-x-2">
+              <div className="flex aspect-square items-center justify-center overflow-hidden rounded-full border border-gray-400 px-1">
+                <User size={21} />
+              </div>
+              <div>
+                <div>
+                  <p className="font-semibold">{review.user.name}</p>
+                  <p className="text-xs font-semibold text-gray-400">{review.variant.name}</p>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col gap-x-2">
-              <p className="font-semibold">{review.user.name}</p>
-              <p className="text-xs text-slate-400">{review.relativeTime}</p>
-            </div>
+            <p className="text-xs text-slate-400">{review.relativeTime}</p>
           </div>
           <Rating rating={review.rating} size="sm" />
-          <p className="text-xs font-semibold text-gray-400">{review.variant.name}</p>
           <div className="mt-2 flex items-start gap-x-1">
             <Quote size={12} className="fill-current text-gray-500" />
             <p>{review.comment}</p>

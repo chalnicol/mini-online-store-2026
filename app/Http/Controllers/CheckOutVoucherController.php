@@ -3,86 +3,84 @@
 namespace App\Http\Controllers;
 
 use App\Models\Voucher;
+use App\Http\Resources\VoucherResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CheckOutVoucherController extends Controller
 {
-    /**
-     * Display a list of vouchers for the Global Window
-     */
-    public function index()
-    {
-        $user = Auth::user();
-        $now = now();
+  /**
+   * Voucher Wallet — shows all vouchers available to claim + already claimed
+   * Used for the /profile/vouchers wallet page
+   */
+  public function index(Request $request)
+  {
+    $user = Auth::user();
 
-        // 1. Get ALL vouchers that are either public OR specifically for this user
-        // AND have not expired yet.
-        $allEligible = Voucher::where(function ($query) use ($user) {
-                $query->whereNull('user_id')      // Public vouchers
-                    ->orWhere('user_id', $user->id); // Personal vouchers (Late delivery, etc.)
-            })
-            ->where(function ($query) use ($now) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', $now);
-            })
-            // Exclude vouchers THIS user has already used (in the pivot table)
-            ->whereDoesntHave('users', function ($q) use ($user) {
-                $q->where('user_id', $user->id)->whereNotNull('used_at');
-            })
-            ->get();
+    // ✅ Public vouchers not yet claimed + personal vouchers assigned to user
+    $vouchers = Voucher::where('is_active', true)
+      ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+      ->where(fn($q) => $q->whereNull('usage_limit')->orWhereColumn('used_count', '<', 'usage_limit'))
+      ->where(
+        fn($q) => $q
+          // Public unclaimed vouchers
+          ->where(
+            fn($q) => $q
+              ->where('is_personal', false)
+              ->whereDoesntHave('users', fn($q) => $q->where('users.id', $user->id)),
+          )
+          // OR already in user's wallet (claimed, not yet used)
+          ->orWhereHas('users', fn($q) => $q->where('users.id', $user->id)->whereNull('user_voucher.used_at'))
+          // OR personal vouchers assigned to this user
+          ->orWhere(
+            fn($q) => $q->where('is_personal', true)->whereHas('users', fn($q) => $q->where('users.id', $user->id)),
+          ),
+      )
+      ->with('users') // ✅ needed for isClaimed check in resource
+      ->get();
 
-        // 2. Map through them to add a "status" for your React UI
-        $vouchersWithStatus = $allEligible->map(function ($voucher) use ($user) {
-            // Check if this specific voucher is already in the user's wallet
-            $isClaimed = $user->vouchers()
-                ->where('voucher_id', $voucher->id)
-                ->exists();
+    // ✅ Pass subtotal as 0 for wallet page — canApply not relevant here
+    request()->merge(['subtotal' => 0]);
 
-            return [
-                'id' => $voucher->id,
-                'code' => $voucher->code,
-                'type' => $voucher->type,
-                'value' => $voucher->value,
-                'min_spend' => $voucher->min_spend,
-                'expires_at' => $voucher->expires_at,
-                'is_claimed' => $isClaimed, // TRUE = already in wallet, FALSE = needs auto-claim
-                'is_personal' => $voucher->user_id !== null, // To show "Special Reward" badge
-            ];
-        });
+    return response()->json([
+      'vouchers' => VoucherResource::collection($vouchers),
+    ]);
+  }
 
-        return response()->json([
-            'vouchers' => $vouchersWithStatus
-        ]);
+  /**
+   * Claim a public voucher — adds to user_voucher pivot
+   */
+  public function claim(Request $request, Voucher $voucher)
+  {
+    $user = Auth::user();
+
+    // ✅ Check if already claimed
+    if ($user->vouchers()->where('voucher_id', $voucher->id)->exists()) {
+      return back()->withErrors(['voucher' => 'You already claimed this voucher.']);
     }
 
-    /**
-     * Logic to claim a voucher
-     */
-    public function claim(Request $request, Voucher $voucher)
-    {
-        $user = Auth::user();
+    // ✅ Block personal vouchers not assigned to this user
+    if ($voucher->is_personal) {
+      $isAssigned = $voucher->users()->where('users.id', $user->id)->exists();
 
-        // 1. Check if it's already claimed
-        if ($user->vouchers()->where('voucher_id', $voucher->id)->exists()) {
-            return back()->withErrors(['voucher' => 'You already claimed this voucher.']);
-        }
-
-        // 2. Check if the voucher is private to someone else
-        if ($voucher->user_id !== null && $voucher->user_id !== $user->id) {
-            return back()->withErrors(['voucher' => 'This voucher is not available for you.']);
-        }
-
-        // 3. Check global usage limit (if 100 people already claimed/used it)
-        if ($voucher->usage_limit && $voucher->used_count >= $voucher->usage_limit) {
-            return back()->withErrors(['voucher' => 'This voucher has reached its limit.']);
-        }
-
-        // 4. ATTACH TO WALLET
-        $user->vouchers()->attach($voucher->id);
-
-        return back()->with('success', 'Voucher added to your wallet!');
+      if (!$isAssigned) {
+        return back()->withErrors(['voucher' => 'This voucher is not available for you.']);
+      }
     }
 
-   
+    // ✅ Check global usage limit
+    if ($voucher->usage_limit && $voucher->used_count >= $voucher->usage_limit) {
+      return back()->withErrors(['voucher' => 'This voucher has reached its limit.']);
+    }
+
+    // ✅ Check expiry
+    if ($voucher->expires_at && $voucher->expires_at->isPast()) {
+      return back()->withErrors(['voucher' => 'This voucher has expired.']);
+    }
+
+    // ✅ Attach to wallet
+    $user->vouchers()->attach($voucher->id, ['used_at' => null]);
+
+    return back()->with('success', 'Voucher added to your wallet!');
+  }
 }

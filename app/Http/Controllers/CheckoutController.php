@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{ProductVariant, CartItem, Voucher};
-use App\Http\Resources\{CartItemResource, UserAddressResource, VoucherResource};
+use App\Models\{ProductVariant, CartItem, Voucher, Order, OrderItem, InventoryMovement, ServiceableArea};
+use App\Http\Resources\{CartItemResource, UserAddressResource, VoucherResource, ServiceableAreaResource, OrderResource};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class CheckoutController extends Controller
@@ -14,19 +15,27 @@ class CheckoutController extends Controller
   {
     $user = Auth::user();
 
-    // Ensure session exists
+    if ($request->query('source') === 'cart') {
+      session()->forget('checkout_settings.buy_now');
+    }
+
     if (!session()->has('checkout_settings')) {
       session()->put('checkout_settings', [
         'delivery_type' => 'standard',
         'schedule' => null,
         'voucher_id' => null,
+        'buy_now' => null,
       ]);
     }
 
-    $checkout = session()->get('checkout_settings');
     $checkoutData = $this->getCheckoutData($request, $user);
-    $itemsSubtotal = $checkoutData['subtotal'];
 
+    if ($checkoutData['items']->isEmpty()) {
+      return redirect()->route('cart.index')->with('error', 'No items selected for checkout.');
+    }
+
+    $checkout = session()->get('checkout_settings');
+    $itemsSubtotal = $checkoutData['subtotal'];
     $deliveryType = $checkout['delivery_type'] ?? 'standard';
     $shippingFee = $this->calculateShippingFee($deliveryType, $itemsSubtotal);
 
@@ -34,11 +43,9 @@ class CheckoutController extends Controller
     $appliedVoucher = null;
 
     if (!empty($checkout['voucher_id'])) {
-      $voucher = Voucher::find($checkout['voucher_id']);
+      $voucher = Voucher::withoutTrashed()->find($checkout['voucher_id']);
 
-      // Use the Model's isUsable logic (which checks is_personal & pivot table)
       if ($voucher && $voucher->isUsable($itemsSubtotal, $user->id)) {
-        // Specific check: Shipping vouchers only apply to Standard + when there is a fee
         if ($voucher->type === 'shipping') {
           if ($deliveryType === 'standard' && $shippingFee > 0) {
             $appliedVoucher = $voucher;
@@ -48,10 +55,12 @@ class CheckoutController extends Controller
           $appliedVoucher = $voucher;
           $discount = $voucher->calculateDiscount($itemsSubtotal);
         }
+      } else {
+        session()->put('checkout_settings.voucher_id', null);
       }
     }
 
-    return Inertia::render('user/checkout', [
+    return Inertia::render('user/checkout/index', [
       'cartItems' => CartItemResource::collection($checkoutData['items']),
       'totalItemsCount' => (int) $checkoutData['count'],
       'itemsSubtotal' => (float) $itemsSubtotal,
@@ -60,8 +69,185 @@ class CheckoutController extends Controller
       'discount' => (float) $discount,
       'finalTotal' => (float) max(0, $itemsSubtotal + $shippingFee - $discount),
       'appliedVoucher' => $appliedVoucher ? new VoucherResource($appliedVoucher) : null,
-      'addresses' => UserAddressResource::collection($user->addresses()->latest()->get()),
+      'addresses' => UserAddressResource::collection($user->addresses()->with('serviceableArea')->latest()->get()),
+      'serviceableAreas' => ServiceableAreaResource::collection(ServiceableArea::orderBy('barangay')->get()),
       'availableVouchers' => Inertia::lazy(fn() => $this->getEligibleVouchers($user, $itemsSubtotal)),
+    ]);
+  }
+
+  public function buyNow(Request $request)
+  {
+    $request->validate([
+      'variant_id' => 'required|exists:product_variants,id',
+      'qty' => 'sometimes|integer|min:1|max:100',
+    ]);
+
+    session()->put('checkout_settings', [
+      'delivery_type' => 'standard',
+      'schedule' => null,
+      'voucher_id' => null,
+      'buy_now' => [
+        'variant_id' => $request->variant_id,
+        'qty' => $request->qty ?? 1,
+      ],
+    ]);
+
+    return to_route('checkout');
+  }
+
+  public function placeOrder(Request $request)
+  {
+    $request->validate([
+      'address_id' => 'required|exists:user_addresses,id',
+      'payment_method' => 'required|in:cod,gcash,paymaya,credit_card',
+      'notes' => 'nullable|string|max:500',
+    ]);
+
+    $user = Auth::user();
+    $checkout = session()->get('checkout_settings', []);
+    $checkoutData = $this->getCheckoutData($request, $user);
+
+    if ($checkoutData['items']->isEmpty()) {
+      return back()->withErrors(['cart' => 'Your cart is empty.']);
+    }
+
+    $deliveryType = $checkout['delivery_type'] ?? 'standard';
+    $itemsSubtotal = $checkoutData['subtotal'];
+    $shippingFee = $this->calculateShippingFee($deliveryType, $itemsSubtotal);
+
+    $discount = 0;
+    $voucherCode = null;
+    $appliedVoucher = null;
+
+    if (!empty($checkout['voucher_id'])) {
+      $voucher = Voucher::withoutTrashed()->find($checkout['voucher_id']);
+
+      if ($voucher && $voucher->isUsable($itemsSubtotal, $user->id)) {
+        if ($voucher->type === 'shipping') {
+          if ($deliveryType === 'standard' && $shippingFee > 0) {
+            $appliedVoucher = $voucher;
+            $discount = $shippingFee;
+          }
+        } else {
+          $appliedVoucher = $voucher;
+          $discount = $voucher->calculateDiscount($itemsSubtotal);
+        }
+        $voucherCode = $voucher->code;
+      }
+    }
+
+    $finalTotal = max(0, $itemsSubtotal + $shippingFee - $discount);
+    $address = $user->addresses()->findOrFail($request->address_id);
+
+    $order = null;
+
+    DB::transaction(function () use (
+      $user,
+      $request,
+      $checkout,
+      $checkoutData,
+      $address,
+      $appliedVoucher,
+      $voucherCode,
+      $itemsSubtotal,
+      $shippingFee,
+      $discount,
+      $finalTotal,
+      $deliveryType,
+      &$order,
+    ) {
+      $order = Order::create([
+        'user_id' => $user->id,
+        'address_id' => $address->id,
+        'shipping_contact_person' => $address->contact_person,
+        'shipping_contact_number' => $address->contact_number,
+        'shipping_full_address' => $address->full_address,
+        'voucher_code' => $voucherCode,
+        'voucher_discount' => $discount,
+        'items_subtotal' => $itemsSubtotal,
+        'shipping_fee' => $shippingFee,
+        'final_total' => $finalTotal,
+        'status' => 'pending',
+        'payment_status' => 'unpaid',
+        'payment_method' => $request->payment_method,
+        'delivery_type' => $deliveryType,
+        'delivery_schedule' => $checkout['schedule'] ?? null,
+        'notes' => $request->notes,
+      ]);
+
+      foreach ($checkoutData['items'] as $item) {
+        $variant = $item->variant;
+
+        OrderItem::create([
+          'order_id' => $order->id,
+          'product_variant_id' => $variant->id,
+          'product_name' => $variant->product->name,
+          'variant_name' => $variant->name,
+          'variant_attributes' => $variant->attributes,
+          'quantity' => $item->quantity,
+          'price_at_purchase' => $variant->calculated_price,
+          'discount_at_purchase' => max(0, $variant->price - $variant->calculated_price),
+        ]);
+
+        $variant->decrement('stock_qty', $item->quantity);
+
+        InventoryMovement::create([
+          'product_variant_id' => $variant->id,
+          'quantity' => -$item->quantity,
+          'type' => 'sale',
+          'status' => 'available',
+          'reason' => "Order #{$order->order_number}",
+          'reference_type' => Order::class,
+          'reference_id' => $order->id,
+          'user_id' => $user->id,
+        ]);
+      }
+
+      if ($appliedVoucher) {
+        $appliedVoucher->increment('used_count');
+
+        if ($appliedVoucher->is_personal) {
+          // Personal — update existing pivot record
+          $appliedVoucher->users()->updateExistingPivot($user->id, ['used_at' => now()]);
+        } else {
+          // Public — attach user with used_at to track per-user usage
+          $appliedVoucher->users()->attach($user->id, ['used_at' => now()]);
+        }
+      }
+
+      if (empty(session()->get('checkout_settings.buy_now'))) {
+        $user->cartItems()->where('checked', true)->delete();
+      }
+
+      session()->forget('checkout_settings');
+    });
+
+    // COD
+    return redirect()->route('checkout.order-result', [
+      'order' => $order->id,
+      'result' => 'success',
+    ]);
+
+    // handleReturn — paid
+    return redirect()->route('checkout.order-result', [
+      'order' => $order->id,
+      'result' => $order->payment_status === 'paid' ? 'success' : 'pending',
+    ]);
+
+    // handleCancel
+    return redirect()->route('checkout.order-result', [
+      'order' => $order->id,
+      'result' => 'cancelled',
+    ]);
+  }
+
+  public function orderResult(Request $request)
+  {
+    $order = Order::where('id', $request->query('order'))->where('user_id', Auth::id())->firstOrFail();
+
+    return Inertia::render('user/checkout/result', [
+      'order' => new OrderResource($order),
+      'result' => $request->query('result', 'success'),
     ]);
   }
 
@@ -75,9 +261,8 @@ class CheckoutController extends Controller
 
     $checkout = session()->get('checkout_settings', ['delivery_type' => 'standard']);
 
-    // Auto-remove shipping voucher if switching away from standard
     if ($request->delivery_type !== 'standard' && !empty($checkout['voucher_id'])) {
-      $voucher = Voucher::find($checkout['voucher_id']);
+      $voucher = Voucher::withoutTrashed()->find($checkout['voucher_id']);
       if ($voucher && $voucher->type === 'shipping') {
         $checkout['voucher_id'] = null;
         session()->flash('warning', 'Shipping voucher removed (Standard delivery only).');
@@ -87,13 +272,11 @@ class CheckoutController extends Controller
     $checkout['delivery_type'] = $request->delivery_type;
     $checkout['schedule'] =
       $request->delivery_type === 'custom'
-        ? [
-          'date' => $request->schedule_date,
-          'time' => $request->schedule_time,
-        ]
+        ? ['date' => $request->schedule_date, 'time' => $request->schedule_time]
         : null;
 
     session()->put('checkout_settings', $checkout);
+
     return back();
   }
 
@@ -102,15 +285,15 @@ class CheckoutController extends Controller
     $request->validate(['voucher_id' => 'required|exists:vouchers,id']);
 
     $user = Auth::user();
-    $voucher = Voucher::findOrFail($request->voucher_id);
+    $voucher = Voucher::withoutTrashed()->findOrFail($request->voucher_id);
     $checkoutData = $this->getCheckoutData($request, $user);
 
     if (!$voucher->isUsable($checkoutData['subtotal'], $user->id)) {
       return back()->withErrors(['voucher' => 'This voucher is not available for your order.']);
     }
 
-    // Extra check for shipping type
     $checkout = session()->get('checkout_settings');
+
     if ($voucher->type === 'shipping' && ($checkout['delivery_type'] ?? 'standard') !== 'standard') {
       return back()->withErrors(['voucher' => 'Shipping vouchers only apply to Standard Delivery.']);
     }
@@ -123,47 +306,61 @@ class CheckoutController extends Controller
   public function removeVoucher()
   {
     session()->put('checkout_settings.voucher_id', null);
-    return back()->with('success', 'Voucher removed');
+
+    return back()->with('success', 'Voucher removed.');
   }
 
-  private function getEligibleVouchers($user, $subtotal)
-  {
-    $vouchers = Voucher::where('is_active', true)
-      ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-      ->where(function ($q) use ($user) {
-        $q->where('is_personal', false) //.
-          ->orWhereHas('users', fn($sq) => $sq->where('user_id', $user->id));
-      })
-      ->get();
-
-    // Pass subtotal to the resource via request helper
-    request()->merge(['subtotal' => $subtotal]);
-
-    return VoucherResource::collection($vouchers);
-  }
+  // ---- Private Helpers ----
 
   private function getCheckoutData(Request $request, $user)
   {
-    if ($request->query('source') === 'buy_now') {
-      $variant = ProductVariant::with('product')->findOrFail($request->query('variant_id'));
-      $qty = (int) $request->query('qty', 1);
+    $checkout = session()->get('checkout_settings', []);
+
+    if (!empty($checkout['buy_now'])) {
+      $variantId = $checkout['buy_now']['variant_id'];
+      $qty = (int) ($checkout['buy_now']['qty'] ?? 1);
+      $variant = ProductVariant::with('product')->findOrFail($variantId);
+
       $item = new CartItem(['quantity' => $qty, 'product_variant_id' => $variant->id]);
       $item->setRelation('variant', $variant);
-      $items = collect([$item]);
-    } else {
-      $items = $user
-        ->cartItems()
-        ->where('checked', true)
-        ->whereHas('variant', fn($q) => $q->where('stock_qty', '>', 0))
-        ->with('variant.product')
-        ->get();
+
+      return [
+        'items' => collect([$item]),
+        'subtotal' => $variant->calculated_price * $qty,
+        'count' => $qty,
+      ];
     }
 
-    $subtotal = $items->sum(fn($i) => $i->variant->calculated_price * $i->quantity);
-    return ['items' => $items, 'subtotal' => $subtotal, 'count' => $items->sum('quantity')];
+    $items = $user
+      ->cartItems()
+      ->where('checked', true)
+      ->whereHas('variant', fn($q) => $q->where('stock_qty', '>', 0))
+      ->with('variant.product')
+      ->get();
+
+    return [
+      'items' => $items,
+      'subtotal' => $items->sum(fn($i) => $i->variant->calculated_price * $i->quantity),
+      'count' => $items->sum('quantity'),
+    ];
   }
 
-  private function calculateShippingFee($type, $subtotal): float
+  private function getEligibleVouchers($user, float $subtotal)
+  {
+    request()->merge(['subtotal' => $subtotal]);
+
+    return VoucherResource::collection(
+      Voucher::where('is_active', true)
+        ->with('users')
+        ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+        ->where(fn($q) => $q->whereNull('usage_limit')->orWhereColumn('used_count', '<', 'usage_limit'))
+        ->whereHas('users', fn($q) => $q->where('users.id', $user->id)->whereNull('user_voucher.used_at'))
+        ->get()
+        ->values(),
+    );
+  }
+
+  private function calculateShippingFee(string $type, float $subtotal): float
   {
     return match ($type) {
       'express' => 80.0,

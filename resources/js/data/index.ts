@@ -19,10 +19,10 @@ export const formRules: Record<string, string[]> = {
 };
 
 export const paymentMethods: PaymentMethod[] = [
-  { id: 'p1', name: 'Cash on Delivery', type: 'cod' },
-  { id: 'p2', name: 'Gcash', type: 'gcash' },
-  { id: 'p3', name: 'Paymaya', type: 'paymaya' },
-  { id: '4', name: 'Credit Card', type: 'cc' },
+  { id: 'cod', name: 'Cash on Delivery', type: 'cod' },
+  { id: 'gcash', name: 'GCash', type: 'gcash' },
+  { id: 'paymaya', name: 'PayMaya', type: 'paymaya' },
+  { id: 'credit_card', name: 'Credit / Debit Card', type: 'credit_card' },
 ];
 
 export const deliveryDataTypes: Record<DeliveryType, DeliveryTypeDetails> = {
@@ -54,20 +54,34 @@ export const adnminNavItems: NavItem[] = [
   { id: 1, href: '/admin', label: 'Dashboard' },
   { id: 2, href: '/admin/users', label: 'Users' },
   { id: 3, href: '/admin/products', label: 'Products' },
-  { id: 6, href: '/admin/categories', label: 'Categories' },
-  { id: 10, href: '/admin/discounts', label: 'Discounts' },
-  { id: 8, href: '/admin/reviews', label: 'Reviews' },
-  { id: 9, href: '/admin/vouchers', label: 'Vouchers' },
-  { id: 11, href: '/admin/suppliers', label: 'Suppliers' },
-  { id: 4, href: '/admin/inventories', label: 'Inventories' },
-  { id: 5, href: '/admin/orders', label: 'Orders' },
+  { id: 4, href: '/admin/categories', label: 'Categories' },
+  { id: 5, href: '/admin/discounts', label: 'Discounts' },
+  { id: 6, href: '/admin/reviews', label: 'Reviews' },
+  { id: 7, href: '/admin/vouchers', label: 'Vouchers' },
+  { id: 8, href: '/admin/suppliers', label: 'Suppliers' },
+  { id: 9, href: '/admin/inventories', label: 'Inventories' },
+  { id: 10, href: '/admin/orders', label: 'Orders' },
+  { id: 11, href: '/admin/price-history', label: 'Price History' },
+  { id: 12, href: '/admin/returns', label: 'Returns' },
+  { id: 13, href: '/admin/sales', label: 'Sales' },
+];
+
+export const inventoryMovementReasons = [
+  'Physical Inventory Count',
+  'Damaged on Shell',
+  'Theft or Loss',
+  'Data Entry Correction',
+  'Found Item in Warehouse',
 ];
 
 export const profileNavItems: NavItem[] = [
   { id: 1, href: '/profile', label: 'Settings' },
   { id: 2, href: '/profile/addresses', label: 'Addresses' },
   { id: 3, href: '/profile/orders', label: 'Orders' },
+  // { id: 7, href: '/profile/returns', label: 'Returns' },
+  { id: 5, href: '/profile/vouchers', label: 'Vouchers' },
   { id: 4, href: '/profile/reviews', label: 'Reviews' },
+  { id: 6, href: '/profile/notifications', label: 'Notifications' },
 ];
 
 export const ADDRESS_TYPES = ['Home', 'Office', 'Other'] as const;

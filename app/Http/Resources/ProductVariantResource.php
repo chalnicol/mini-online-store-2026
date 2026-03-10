@@ -7,46 +7,56 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductVariantResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(Request $request): array
-    {
-        // return parent::toArray($request);
-        return [
-            'id' => $this->id,
-            'name' => $this->name, // "L / Blue"
-            'sku' => $this->sku,
-            
-            // Replace hardcoded size/color with the JSON attributes array
-            'attributes' => $this->attributes, // Sends { "Size": "L", "Color": "Blue" }
-            
-            'imagePath' => $this->image_path,
-            
-            // Prices cast to float for JS math safety
-            'price' => (float) $this->price,
-            'calculatedPrice' => (float) $this->calculated_price, 
-            // 'compareAtPrice' => $this->compare_at_price ? (float) $this->compare_at_price : null,
-            
-            'stockQty' => (int) $this->stock_qty,
-            'isActive' => (bool) $this->is_active,
+  /**
+   * Transform the resource into an array.
+   *
+   * @return array<string, mixed>
+   */
+  public function toArray(Request $request): array
+  {
+    // return parent::toArray($request);
+    return [
+      'id' => $this->id,
+      'name' => $this->name, // "L / Blue"
+      'sku' => $this->sku,
 
-            // Relations
-            'discounts' => DiscountResource::collection($this->whenLoaded('discounts')),
-            'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
-            
-            'productId' => $this->product_id,
-            // 'product' => new ProductResource($this->whenLoaded('product')),
-            'product' => [
-                'name' => $this->product->name ?? null,
-                'slug' => $this->product->slug ?? null,
-                'id' => $this->product->id ?? null,
-                'variantsCount' => (int) $this->product->variants()->count() ?? 1
-            ],
-            'reviewsCount' => (int) ($this->reviews_count ?? 0),
+      // Replace hardcoded size/color with the JSON attributes array
+      'attributes' => $this->attributes, // Sends { "Size": "L", "Color": "Blue" }
 
-        ];
-    }
+      'imagePath' => $this->image_path,
+
+      // Prices cast to float for JS math safety
+      'price' => (float) $this->price,
+      'calculatedPrice' => (float) $this->calculated_price,
+      // 'compareAtPrice' => $this->compare_at_price ? (float) $this->compare_at_price : null,
+
+      'stockQty' => (int) $this->stock_qty,
+      'isActive' => (bool) $this->is_active,
+
+      // Relations
+      'discounts' => DiscountResource::collection($this->whenLoaded('discounts')),
+      'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+
+      'productId' => $this->product_id,
+      // 'product' => new ProductResource($this->whenLoaded('product')),
+      // 'product' => [
+      //   'name' => $this->product->name ?? null,
+      //   'slug' => $this->product->slug ?? null,
+      //   'id' => $this->product->id ?? null,
+      //   'variantsCount' => (int) $this->product->variants()->count() ?? 1,
+      // ],
+      'product' => $this->relationLoaded('product')
+        ? [
+          'id' => $this->product->id ?? null,
+          'name' => $this->product->name ?? null,
+          'slug' => $this->product->slug ?? null,
+          'variantsCount' => (int) $this->product->variants()->count() ?? 1,
+        ]
+        : null,
+
+      'reviewsCount' => (int) ($this->reviews_count ?? 0),
+      'avgUnitCost' => (float) $this->avg_unit_cost,
+      'suggestedPrice' => (float) $this->suggested_price ?? null,
+    ];
+  }
 }

@@ -20,11 +20,7 @@ class DiscountController extends Controller
       ->withCount('variants')
       ->when($request->search, function ($query, $search) {
         $query->where(function ($q) use ($search) {
-          $q->where('code', 'like', "%{$search}%")->orWhere(
-            'description',
-            'like',
-            "%{$search}%",
-          );
+          $q->where('code', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%");
         });
       })
       ->orderBy('updated_at', 'desc')
@@ -63,10 +59,7 @@ class DiscountController extends Controller
       $discount->variants()->sync($request->variant_ids);
     }
 
-    return to_route('admin.discounts.show', $discount->id)->with(
-      'success',
-      'Discount created successfully.',
-    );
+    return to_route('admin.discounts')->with('success', 'Discount created successfully.');
   }
 
   public function show(Discount $discount)
@@ -87,12 +80,7 @@ class DiscountController extends Controller
   {
     $validated = $request->validate([
       // Unique code check, ignoring the current ID
-      'code' => [
-        'required',
-        'string',
-        'max:50',
-        Rule::unique('discounts')->ignore($discount->id),
-      ],
+      'code' => ['required', 'string', 'max:50', Rule::unique('discounts')->ignore($discount->id)],
       'type' => 'required|in:fixed,percentage',
       'value' => 'required|numeric|min:0',
       'description' => 'nullable|string|max:255',
@@ -110,10 +98,7 @@ class DiscountController extends Controller
       $discount->variants()->sync($request->variant_ids);
     }
 
-    return to_route('admin.discounts.show', $discount->id)->with(
-      'success',
-      'Discount updated successfully',
-    );
+    return to_route('admin.discounts.show', $discount->id)->with('success', 'Discount updated successfully');
   }
 
   public function destroy(Discount $discount)
@@ -121,17 +106,13 @@ class DiscountController extends Controller
     // Guard: Cannot delete if variants are attached
     if ($discount->variants()->exists()) {
       return back()->withErrors([
-        'delete' =>
-          'Cannot delete discount because it is currently applied to one or more product variants.',
+        'delete' => 'Cannot delete discount because it is currently applied to one or more product variants.',
       ]);
     }
 
     $discount->delete();
 
-    return to_route('admin.discounts')->with(
-      'success',
-      'Discount deleted successfully.',
-    );
+    return to_route('admin.discounts')->with('success', 'Discount deleted successfully.');
   }
 
   public function toggleStatus(Discount $discount)

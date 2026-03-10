@@ -51,8 +51,8 @@ const DiscountListing = ({
                                     {item.id < 10 ? `0${item.id}` : item.id}
                                 </p> */}
                 <div className="flex gap-2 p-2">
-                  <div className="flex-1 space-y-0.5">
-                    <p className="flex items-center gap-x-1.5 font-bold text-slate-600">
+                  <div className="flex-1 space-y-1">
+                    <p className="flex items-center gap-x-1.5 text-sm font-bold text-slate-600">
                       <span
                         className={cn(
                           'aspect-square px-1 text-xs text-white',
@@ -67,8 +67,6 @@ const DiscountListing = ({
                       <span>{item.description}</span>
                       <span> &bull;</span>
                       <span>{`${item.value}${item.type == 'fixed' ? 'PHP' : '%'} OFF`}</span>
-                      <span> &bull;</span>
-                      <span className="bg-gray-300 px-2 text-[10px] font-bold text-gray-600">{item.variantsCount}</span>
                     </p>
                   </div>
                   <div className="flex flex-none flex-col gap-1">
@@ -78,8 +76,12 @@ const DiscountListing = ({
                   </div>
                 </div>
 
-                <div className="border-t border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-gray-600">
-                  <p>ID: {item.id < 10 ? `0${item.id}` : item.id}</p>
+                <div className="flex justify-between border-t border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-gray-600">
+                  <p>
+                    ID:
+                    {item.id < 10 ? `0${item.id}` : item.id}
+                  </p>
+                  <p>Variants:{item.variantsCount}</p>
                 </div>
               </Link>
             ))}

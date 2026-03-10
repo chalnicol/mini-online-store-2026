@@ -1,6 +1,7 @@
 import useDebounce from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
-import { Loader, X } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { Check, Loader, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import BaseModal from './BaseModal';
 import CustomButton from './CustomButton';
@@ -20,6 +21,7 @@ interface SelectSearchModalProps<T extends Identifiable> {
   renderItem: (item: T) => React.ReactNode;
   onSubmit: (value: number[]) => void;
   onClose: () => void;
+  addLink?: string | null;
 }
 
 const SelectSearchModal = <T extends Identifiable>({
@@ -28,6 +30,7 @@ const SelectSearchModal = <T extends Identifiable>({
   placeholder,
   itemsMaxCount,
   targetTable,
+  addLink,
   renderSearchItem,
   renderItem,
   onSubmit,
@@ -95,7 +98,7 @@ const SelectSearchModal = <T extends Identifiable>({
   }, [debouncedSearch]);
 
   return (
-    <BaseModal size="lg">
+    <BaseModal size="xl">
       <div className="flex justify-end">
         <button
           className="cursor-pointer rounded-t bg-sky-900 px-2 py-0.5 text-xs text-white hover:bg-sky-800"
@@ -106,14 +109,33 @@ const SelectSearchModal = <T extends Identifiable>({
       </div>
       <div className="space-y-2 rounded rounded-tr-none border border-gray-400 bg-white p-3 shadow-lg">
         <h2 className="font-semibold">{label}</h2>
-        <input
-          autoFocus
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded border border-gray-400 bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-sky-900"
-          placeholder={placeholder || `Search ${targetTable}...`}
-        />
+
+        <div className="flex divide-x divide-gray-400 overflow-hidden rounded border border-gray-400 bg-white focus-within:ring-1 focus-within:ring-sky-900">
+          <input
+            autoFocus
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-white px-2 py-1 outline-none"
+            placeholder={placeholder || `Search ${targetTable}...`}
+          />
+          {search.length > 0 && (
+            <button
+              onClick={() => setSearch('')} //
+              className="cursor-pointer bg-gray-200 px-2 text-xs font-semibold tracking-wider text-gray-500 uppercase outline-none hover:bg-gray-100"
+            >
+              Clear
+            </button>
+          )}
+          {addLink && (
+            <Link
+              href={addLink}
+              className="ms-auto block flex items-center justify-center bg-gray-200 px-1 px-2 py-0.5 text-xs tracking-wider text-gray-600 uppercase hover:bg-gray-100"
+            >
+              Create
+            </Link>
+          )}
+        </div>
         <div className="h-30 w-full overflow-y-auto rounded border border-gray-400 bg-white">
           {isSearching ? (
             <div className="flex h-full w-full items-center justify-center gap-x-2 p-4 text-sm text-gray-400">
@@ -131,20 +153,25 @@ const SelectSearchModal = <T extends Identifiable>({
                   )}
                 >
                   {renderSearchItem(result)}
+
                   {isSelected(result.id) ? (
                     <CustomButton
                       size="xs"
-                      label="Remove"
                       color="danger" //..
                       onClick={() => handleManageItem('remove', result)}
-                    />
+                      // disabled={itemsMaxCount ? itemsSelected.length >= itemsMaxCount : false}
+                    >
+                      <X size={14} />
+                    </CustomButton>
                   ) : (
                     <CustomButton
                       size="xs"
-                      label="Select"
                       color="primary"
                       onClick={() => handleManageItem('add', result)}
-                    />
+                      disabled={itemsMaxCount ? itemsSelected.length >= itemsMaxCount : false}
+                    >
+                      <Check size={14} />
+                    </CustomButton>
                   )}
                 </div>
               ))}
@@ -196,7 +223,8 @@ const SelectSearchModal = <T extends Identifiable>({
             label="Submit"
             // size="sm"
             color="primary" //..
-            onClick={() => onSubmit(selected.map((s) => s.id))}
+            onClick={() => onSubmit(itemsSelected.map((item) => item.id))}
+            disabled={itemsSelected.length === 0}
           />
         </div>
       </div>

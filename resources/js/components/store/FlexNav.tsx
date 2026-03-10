@@ -32,12 +32,12 @@ const FlexNav = ({ className, parentPath, navItems }: FlexNavProps) => {
     if (showMenu && menuRef.current) {
       gsap.fromTo(
         menuRef.current,
-        { scale: 0 },
+        { height: 0 },
         {
-          scale: 1,
+          height: 'auto',
           duration: 0.6,
-          ease: 'elastic.out(1, 0.5)',
-          transformOrigin: 'top left',
+          ease: 'elastic.out(1, 0.8)',
+          transformOrigin: 'top center',
         },
       );
     }
@@ -91,16 +91,15 @@ const FlexNav = ({ className, parentPath, navItems }: FlexNavProps) => {
         {showMenu && (
           <div
             ref={menuRef}
-            className="absolute z-10 mt-0.5 w-44 overflow-hidden rounded border border-gray-400 shadow-lg"
+            className="absolute z-20 mt-1 grid w-full grid-cols-2 gap-1.5 overflow-hidden rounded border border-gray-400 bg-gray-100 bg-white p-1.5 shadow-lg"
           >
-            {navItems.map((item) => {
+            {navItems.map((item, i) => {
               const active = isActive(item.href);
               return (
                 <button
                   key={item.id}
                   className={cn(
-                    'w-full px-3 py-1.5 text-left text-sm font-semibold transition-colors',
-                    active ? 'bg-sky-900 text-white' : 'cursor-pointer bg-gray-100 text-gray-800 hover:bg-gray-200',
+                    'w-full cursor-pointer rounded border border-gray-400 bg-gray-100 px-3 py-1.5 text-left text-sm font-semibold shadow-md transition-colors hover:bg-gray-50 disabled:cursor-default disabled:bg-sky-900 disabled:text-white disabled:shadow-none',
                   )}
                   disabled={active}
                   onClick={() => handleMenuClick(item.href)}
@@ -115,26 +114,28 @@ const FlexNav = ({ className, parentPath, navItems }: FlexNavProps) => {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden w-44 space-y-1.5 md:block">
-        {navItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={'q' + item.id}
-              href={item.href}
-              disabled={active}
-              // Using Link for both states allows clicking active tab to "reset" to the base URL
-              className={cn(
-                'block w-full rounded border px-2.5 py-1.5 text-left text-sm font-bold shadow transition-all duration-300',
-                active
-                  ? 'pointer-events-none cursor-default border-sky-800 bg-sky-900 text-white'
-                  : 'cursor-pointer border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-100 active:scale-95',
-              )}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
+      <div className="hidden w-44 md:block">
+        <div className="max-h-[80dvh] space-y-1.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={'q' + item.id}
+                href={item.href}
+                disabled={active}
+                // Using Link for both states allows clicking active tab to "reset" to the base URL
+                className={cn(
+                  'block w-full rounded border px-2.5 py-1.5 text-left text-sm font-bold shadow transition-all duration-300',
+                  active
+                    ? 'pointer-events-none cursor-default border-sky-800 bg-sky-900 text-white'
+                    : 'cursor-pointer border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-100 active:scale-95',
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
