@@ -10,6 +10,7 @@ import ShippingAddressSelectModal from '@/components/store/ShippingAddressSelect
 import TitleBar from '@/components/store/TitleBar';
 import { deliveryDataTypes, paymentMethods } from '@/data';
 import CustomLayout from '@/layouts/app-custom-layout';
+import { cn } from '@/lib/utils';
 import type {
   AddressDetails,
   CheckoutItem,
@@ -259,15 +260,21 @@ const Checkout = ({
             <div>
               {paymentMethods.map((method) => (
                 <button
-                  key={method.id}
-                  className={`flex w-full items-center gap-x-2 border-b border-gray-300 px-2 py-1 font-semibold last:border-b-0 ${
-                    method.type === paymentType ? 'bg-gray-100 text-sky-900' : 'hover:bg-gray-50'
-                  } cursor-pointer`}
+                  key={method.type}
+                  className={cn(
+                    'flex w-full cursor-pointer items-start gap-x-2 border-b border-gray-300 px-2 py-1.5 text-left font-semibold last:border-b-0 hover:bg-gray-50 disabled:pointer-events-none disabled:cursor-default',
+                    paymentType === method.type && 'bg-gray-100 font-bold text-gray-600',
+                    !method.active && 'text-slate-400',
+                  )}
                   onClick={() => setPaymentType(method.type)}
-                  disabled={method.type === paymentType}
+                  disabled={method.type === paymentType || !method.active}
                 >
-                  {method.type === paymentType ? <Check size={14} /> : <Circle size={12} />}
-                  {method.name}
+                  <p className="mt-1.5">{method.type === paymentType ? <Check size={14} /> : <Circle size={14} />}</p>
+
+                  <p className="flex flex-col">
+                    {method.name}
+                    {!method.active && <span className="text-xs text-amber-700">Not available.</span>}
+                  </p>
                 </button>
               ))}
             </div>

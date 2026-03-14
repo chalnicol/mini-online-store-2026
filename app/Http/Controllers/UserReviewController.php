@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Review;
+use App\Models\OrderItem;
 use App\Http\Resources\ReviewResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,44 +15,60 @@ class UserReviewController extends Controller
   {
     $user = Auth::user();
 
+    // My Reviews
     $reviewsQuery = Review::where('user_id', $user->id)->with(['product', 'variant']);
 
     if ($request->filled('search')) {
       $reviewsQuery->whereHas('product', fn($q) => $q->where('name', 'like', "%{$request->search}%"));
     }
 
-    $myReviews = $reviewsQuery->latest()->paginate(5)->withQueryString();
+    $myReviews = $reviewsQuery
+      ->latest()
+      ->paginate(10, ['*'], 'page')
+      ->withQueryString();
 
-    $pendingReviews = $user
-      ->orders()
-      ->where('status', 'delivered')
-      ->with([
-        'items' => fn($q) => $q
-          ->whereNotNull('product_variant_id')
-          ->whereDoesntHave('variant.reviews', fn($q) => $q->where('user_id', $user->id))
-          ->with(['variant', 'variant.product']),
-      ])
-      ->get()
-      ->flatMap(
-        fn($order) => $order->items->map(
-          fn($item) => [
-            'order_id' => $order->id,
-            'order_number' => $order->order_number,
-            'order_item_id' => $item->id,
-            'product_id' => $item->variant?->product_id,
-            'product_variant_id' => $item->product_variant_id,
-            'product_name' => $item->product_name,
-            'variant_name' => $item->variant_name,
-            'image_path' => $item->variant?->image_path,
-            'product_slug' => $item->variant?->product?->slug,
-          ],
-        ),
-      )
-      ->values();
+    // Pending Reviews
+    $pendingQuery = \App\Models\OrderItem::query()
+      ->whereHas('order', fn($q) => $q->where('user_id', $user->id)->where('status', 'delivered'))
+      ->whereNotNull('product_variant_id')
+      ->whereDoesntHave('variant.reviews', fn($q) => $q->where('user_id', $user->id))
+      ->with(['variant.product', 'order']);
+
+    $pendingTotal = $pendingQuery->count();
+
+    $pendingReviews = $pendingQuery
+      ->latest()
+      ->paginate(10, ['*'], 'pending_page')
+      ->withQueryString()
+      ->through(
+        fn($item) => [
+          'order_id' => $item->order->id,
+          'order_number' => $item->order->order_number,
+          'order_item_id' => $item->id,
+          'product_id' => $item->variant?->product_id,
+          'product_variant_id' => $item->product_variant_id,
+          'product_name' => $item->product_name,
+          'variant_name' => $item->variant_name,
+          'image_path' => $item->variant?->image_path,
+          'product_slug' => $item->variant?->product?->slug,
+        ],
+      );
 
     return Inertia::render('user/profile/reviews', [
       'myReviews' => ReviewResource::collection($myReviews),
-      'pendingReviews' => $pendingReviews,
+      'pendingReviews' => [
+        'data' => $pendingReviews->items(),
+        'meta' => [
+          'current_page' => $pendingReviews->currentPage(),
+          'last_page' => $pendingReviews->lastPage(),
+          'per_page' => $pendingReviews->perPage(),
+          'total' => $pendingReviews->total(),
+          'from' => $pendingReviews->firstItem(),
+          'to' => $pendingReviews->lastItem(),
+          'links' => $pendingReviews->linkCollection()->toArray(),
+        ],
+      ],
+      'pendingTotal' => $pendingTotal,
       'reviewFilters' => (object) $request->only(['search']),
     ]);
   }

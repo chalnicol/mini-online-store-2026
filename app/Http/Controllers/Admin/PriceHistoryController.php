@@ -14,7 +14,7 @@ class PriceHistoryController extends Controller
   public function index(Request $request)
   {
     $priceHistory = PriceHistory::query()
-      ->with(['variant.product', 'user']) // Eager load the user too if you display who changed the price
+      ->with(['variant.product']) // Eager load the user too if you display who changed the price
       ->when($request->search, function ($query, $search) {
         $query->whereHas('variant.product', function ($q) use ($search) {
           $q->where('name', 'like', "%{$search}%");

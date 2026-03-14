@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ProductVariant, CartItem, Voucher, Order, OrderItem, InventoryMovement, ServiceableArea};
 use App\Http\Resources\{CartItemResource, UserAddressResource, VoucherResource, ServiceableAreaResource, OrderResource};
+use App\Services\PayMongoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
+  public function __construct(private PayMongoService $payMongo) {}
+
   public function index(Request $request)
   {
     $user = Auth::user();
@@ -99,7 +102,7 @@ class CheckoutController extends Controller
   {
     $request->validate([
       'address_id' => 'required|exists:user_addresses,id',
-      'payment_method' => 'required|in:cod,gcash,paymaya,credit_card',
+      'payment_method' => 'required|in:cod,gcash,paymaya,card',
       'notes' => 'nullable|string|max:500',
     ]);
 
@@ -206,11 +209,11 @@ class CheckoutController extends Controller
       if ($appliedVoucher) {
         $appliedVoucher->increment('used_count');
 
-        if ($appliedVoucher->is_personal) {
-          // Personal — update existing pivot record
+        $alreadyInPivot = $appliedVoucher->users()->where('users.id', $user->id)->exists();
+
+        if ($alreadyInPivot) {
           $appliedVoucher->users()->updateExistingPivot($user->id, ['used_at' => now()]);
         } else {
-          // Public — attach user with used_at to track per-user usage
           $appliedVoucher->users()->attach($user->id, ['used_at' => now()]);
         }
       }
@@ -223,22 +226,62 @@ class CheckoutController extends Controller
     });
 
     // COD
-    return redirect()->route('checkout.order-result', [
-      'order' => $order->id,
-      'result' => 'success',
-    ]);
+    if ($request->payment_method === 'cod') {
+      return redirect()->route('checkout.order-result', [
+        'order' => $order->id,
+        'result' => 'success',
+      ]);
+    }
 
-    // handleReturn — paid
-    return redirect()->route('checkout.order-result', [
-      'order' => $order->id,
-      'result' => $order->payment_status === 'paid' ? 'success' : 'pending',
-    ]);
+    // GCash, Maya, Card — all via Payment Intent
+    $methodType = match ($request->payment_method) {
+      'gcash' => 'gcash',
+      'paymaya' => 'paymaya',
+      default => null,
+    };
 
-    // handleCancel
-    return redirect()->route('checkout.order-result', [
-      'order' => $order->id,
-      'result' => 'cancelled',
-    ]);
+    $intent = $this->payMongo->createPaymentIntent(
+      amountInCents: $this->payMongo->toCents($order->final_total),
+      paymentMethodAllowed: [$methodType],
+      description: "Payment for Order {$order->order_number}",
+    );
+
+    $method = $this->payMongo->createPaymentMethod(
+      type: $methodType,
+      billing: [
+        'name' => $user->fname . ' ' . $user->lname,
+        'email' => $user->email,
+        'phone' => $address->contact_number ?? '',
+      ],
+    );
+
+    $attached = $this->payMongo->attachPaymentIntent(
+      paymentIntentId: $intent['id'],
+      paymentMethodId: $method['id'],
+      returnUrl: route('payment.return', $order->id),
+    );
+
+    $order->update(['paymongo_payment_intent_id' => $intent['id']]);
+
+    $redirectUrl = $attached['attributes']['next_action']['redirect']['url'] ?? null;
+
+    if (!$redirectUrl) {
+      if ($attached['attributes']['status'] === 'succeeded') {
+        $order->update(['payment_status' => 'paid']);
+
+        return redirect()->route('checkout.order-result', [
+          'order' => $order->id,
+          'result' => 'success',
+        ]);
+      }
+
+      return redirect()->route('checkout.order-result', [
+        'order' => $order->id,
+        'result' => 'failed',
+      ]);
+    }
+
+    return Inertia::location($redirectUrl);
   }
 
   public function orderResult(Request $request)

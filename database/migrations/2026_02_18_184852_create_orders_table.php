@@ -37,10 +37,11 @@ return new class extends Migration {
 
       $table->enum('payment_status', ['unpaid', 'paid', 'refunded'])->default('unpaid');
 
-      $table->enum('payment_method', ['cod', 'gcash', 'paymaya', 'credit_card']);
+      $table->enum('payment_method', ['cod', 'gcash', 'paymaya', 'card']);
 
       $table->string('paymongo_source_id')->nullable();
       $table->string('paymongo_payment_id')->nullable(); //
+      $table->string('paymongo_payment_intent_id')->nullable();
 
       // ---- Delivery ----
       $table->enum('delivery_type', ['standard', 'express', 'custom']);

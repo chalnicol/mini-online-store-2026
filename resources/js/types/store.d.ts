@@ -198,12 +198,13 @@ export interface NavItem {
   icon?: string;
 }
 
-export type PaymentType = 'cod' | 'gcash' | 'paymaya' | 'credit_card';
+export type PaymentType = 'cod' | 'gcash' | 'paymaya' | 'card';
 
 export interface PaymentMethod {
-  id: string;
+  // id: string;
   name: string;
   type: PaymentType;
+  active: boolean;
 }
 
 export type DeliveryType = 'standard' | 'express' | 'custom';
@@ -286,9 +287,11 @@ export interface InventoryMovement {
 export interface PriceHistory {
   id: number;
   variantId: number;
-  old_price: number;
-  new_price: number;
-  margin_at_time: number;
+  variant?: ProductVariant;
+  oldPrice: number | string;
+  newPrice: number | string;
+  marginAtTime: number;
+  reason: string;
   reason?: string | null;
   createdAt: string;
   updatedAt: string;

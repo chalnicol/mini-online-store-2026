@@ -1,7 +1,7 @@
 import OrdersFiltersModal from '@/components/store/OrdersFiltersModal';
 import Pagination from '@/components/store/Pagination';
 import useDebounce from '@/hooks/use-debounce'; // add this import
-import ProfileLayout from '@/layouts/profile/layout';
+import AdminLayout from '@/layouts/admin/layout';
 import { cn } from '@/lib/utils';
 import { OrderDetails, OrderStatus, PaginatedResponse } from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
@@ -50,14 +50,25 @@ const Orders = ({ orders, orderFilters: filters }: OrdersProps) => {
   useEffect(() => {
     if (debouncedSearch === (filters.search ?? '')) return; // skip on mount
 
-    router.get('/profile/orders', cleanParams({ ...filtersData, search: debouncedSearch }), {
+    router.get('/admin/orders', cleanParams({ ...filtersData, search: debouncedSearch }), {
       preserveState: true,
       preserveScroll: true,
     });
   }, [debouncedSearch]);
 
+  // useEffect(() => {
+  //   router.get('/admin/orders', cleanParams({ ...filtersData }), { preserveState: true, preserveScroll: true });
+  // }, [filtersData]);
   useEffect(() => {
-    router.get('/profile/orders', cleanParams({ ...filtersData }), { preserveState: true, preserveScroll: true });
+    const hasFilters = Object.values(filtersData).some((v) => v !== '');
+    const hadFilters = Object.values(filters).some((v) => v !== '');
+
+    if (!hasFilters && !hadFilters) return; // both empty, skip
+
+    router.get('/admin/orders', cleanParams({ ...filtersData }), {
+      preserveState: true,
+      preserveScroll: true,
+    });
   }, [filtersData]);
 
   const cleanParams = (params: Filters) => {
@@ -96,7 +107,11 @@ const Orders = ({ orders, orderFilters: filters }: OrdersProps) => {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="flex items-center justify-between border-b border-gray-400 py-1">
+        <h2 className="text-lg font-bold text-gray-900">Orders</h2>
+      </div>
+
+      <div className="mt-3 space-y-4">
         {/* Filters */}
 
         <div className="flex divide-x divide-gray-400 overflow-hidden rounded border border-gray-400 focus-within:ring-1 focus-within:ring-sky-800">
@@ -167,7 +182,7 @@ const Orders = ({ orders, orderFilters: filters }: OrdersProps) => {
                 return (
                   <Link
                     key={order.id}
-                    href={`/profile/orders/${order.id}`}
+                    href={`/admin/orders/${order.id}`}
                     className="block overflow-hidden rounded border border-gray-400 shadow-sm transition-shadow hover:shadow-md"
                   >
                     <div className="flex items-center justify-between gap-2 p-3">
@@ -225,6 +240,6 @@ const Orders = ({ orders, orderFilters: filters }: OrdersProps) => {
   );
 };
 
-Orders.layout = (page: React.ReactNode) => <ProfileLayout>{page}</ProfileLayout>;
+Orders.layout = (page: React.ReactNode) => <AdminLayout>{page}</AdminLayout>;
 
 export default Orders;

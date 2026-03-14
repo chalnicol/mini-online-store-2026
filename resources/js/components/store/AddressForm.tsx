@@ -65,27 +65,19 @@ const AddressForm: React.FC<AddressFormProps> = ({ data, keys, serviceableAreas,
       {hasErrors && <PromptMessage type="error" errors={errors} className="mb-3" />}
 
       <form onSubmit={handleSubmit} className="space-y-2.5">
-        <div className="grid grid-cols-3 text-sm">
-          {ADDRESS_TYPES.map((type, index) => {
-            const isActive = form.type === type;
-            const isFirst = index === 0;
-            const isLast = index === ADDRESS_TYPES.length - 1;
-
-            return (
-              <button
-                key={type}
-                type="button"
-                disabled={isActive}
-                onClick={() => setData('type', type as AddressDetailsType)}
-                className={`flex items-center justify-center gap-x-1 border border-gray-400 px-3 py-0.5 font-semibold ${isFirst ? 'rounded-l' : ''} ${isLast ? 'rounded-r' : ''} ${!isLast ? 'border-e-0' : ''} ${
-                  isActive ? 'bg-gray-200 text-gray-700' : 'cursor-pointer bg-white shadow hover:bg-gray-100'
-                }`}
-              >
-                {isActive && <Check size={14} />}
-                {type}
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-3 divide-x divide-gray-400 rounded border border-gray-400 text-sm">
+          {ADDRESS_TYPES.map((type, index) => (
+            <button
+              key={type}
+              type="button"
+              disabled={form.type === type}
+              className="flex cursor-pointer items-center justify-center gap-1 bg-gray-200 px-2 py-1 font-semibold uppercase shadow transition-colors duration-300 first:rounded-l last:rounded-r hover:bg-gray-100 disabled:cursor-default disabled:bg-sky-900 disabled:font-bold disabled:text-white disabled:shadow-none"
+              onClick={() => setData('type', type as AddressDetailsType)}
+            >
+              {form.type === type && <Check size={14} />}
+              {type}
+            </button>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 gap-x-3 gap-y-2.5 md:grid-cols-[1fr_1fr]">
@@ -148,15 +140,15 @@ const AddressForm: React.FC<AddressFormProps> = ({ data, keys, serviceableAreas,
                       type="button"
                       disabled={!area.isActive}
                       onClick={() => setData('serviceable_area_id', area.id)}
-                      className={`w-full border-b border-gray-300 px-2 py-1.5 text-left text-xs last:border-0 odd:bg-white even:bg-gray-100 ${
+                      className={`w-full border-b border-gray-300 px-2 py-1.5 text-left transition-colors duration-300 last:border-0 ${
                         isSelected
                           ? 'bg-sky-900 font-semibold text-white'
                           : area.isActive
-                            ? 'cursor-pointer text-gray-700 hover:bg-gray-50'
+                            ? 'cursor-pointer text-gray-700 hover:bg-sky-50'
                             : 'cursor-not-allowed text-gray-400 line-through'
                       }`}
                     >
-                      <p>{area.barangay}</p>
+                      <p className="text-sm">{area.barangay}</p>
                       <span className={`block text-[10px] ${isSelected ? 'text-sky-200' : 'text-gray-400'}`}>
                         {area.city}
                       </span>

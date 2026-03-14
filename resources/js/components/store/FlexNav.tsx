@@ -114,7 +114,7 @@ const FlexNav = ({ className, parentPath, navItems }: FlexNavProps) => {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden w-44 md:block">
+      <div className="relative hidden w-44 md:block">
         <div className="max-h-[80dvh] space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const active = isActive(item.href);

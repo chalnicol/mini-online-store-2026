@@ -44,6 +44,7 @@ class OrderItem extends Model
 
   public function lineTotal(): float
   {
-    return ($this->price_at_purchase - $this->discount_at_purchase) * $this->quantity;
+    // return ($this->price_at_purchase - $this->discount_at_purchase) * $this->quantity;
+    return $this->price_at_purchase * $this->quantity;
   }
 }

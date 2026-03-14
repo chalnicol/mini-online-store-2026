@@ -6,105 +6,103 @@ use Illuminate\Support\Facades\Http;
 
 class PayMongoService
 {
-    private string $secretKey;
-    private string $publicKey;
-    private string $baseUrl = 'https://api.paymongo.com/v1';
+  private string $secretKey;
+  private string $baseUrl = 'https://api.paymongo.com/v1';
 
-    public function __construct()
-    {
-        $this->secretKey = config('services.paymongo.secret_key');
-        $this->publicKey = config('services.paymongo.public_key');
+  public function __construct()
+  {
+    $this->secretKey = config('services.paymongo.secret_key');
+  }
+
+  // ---- Payment Intent API ----
+
+  public function createPaymentIntent(int $amountInCents, array $paymentMethodAllowed, string $description = ''): array
+  {
+    $response = Http::withBasicAuth($this->secretKey, '')->post("{$this->baseUrl}/payment_intents", [
+      'data' => [
+        'attributes' => [
+          'amount' => $amountInCents,
+          'currency' => 'PHP',
+          'description' => $description,
+          'payment_method_allowed' => $paymentMethodAllowed,
+          'payment_method_options' => [
+            'card' => ['request_three_d_secure' => 'any'],
+          ],
+        ],
+      ],
+    ]);
+
+    if ($response->failed()) {
+      throw new \Exception('PayMongo payment intent creation failed: ' . $response->body());
     }
 
-    // ---- Create a Source (GCash or PayMaya) ----
+    return $response->json('data');
+  }
 
-    public function createSource(
-        string $type,       // 'gcash' or 'paymaya'
-        int $amountInCents, // e.g. 50000 = ₱500.00
-        string $returnUrl,  // where to redirect after payment
-        string $cancelUrl,  // where to redirect on cancel
-        array $billing = [],
-    ): array {
-        $response = Http::withBasicAuth($this->secretKey, '')
-            ->post("{$this->baseUrl}/sources", [
-                'data' => [
-                    'attributes' => [
-                        'type'       => $type,
-                        'amount'     => $amountInCents,
-                        'currency'   => 'PHP',
-                        'redirect'   => [
-                            'success' => $returnUrl,
-                            'failed'  => $cancelUrl,
-                        ],
-                        'billing'    => $billing,
-                    ],
-                ],
-            ]);
+  public function createPaymentMethod(string $type, array $billing = []): array
+  {
+    $response = Http::withBasicAuth($this->secretKey, '')->post("{$this->baseUrl}/payment_methods", [
+      'data' => [
+        'attributes' => [
+          'type' => $type,
+          'billing' => $billing,
+        ],
+      ],
+    ]);
 
-        if ($response->failed()) {
-            throw new \Exception('PayMongo source creation failed: ' . $response->body());
-        }
-
-        return $response->json('data');
+    if ($response->failed()) {
+      throw new \Exception('PayMongo payment method creation failed: ' . $response->body());
     }
 
-    // ---- Create a Payment from a chargeable source ----
+    return $response->json('data');
+  }
 
-    public function createPayment(
-        string $sourceId,
-        int $amountInCents,
-        string $description = '',
-    ): array {
-        $response = Http::withBasicAuth($this->secretKey, '')
-            ->post("{$this->baseUrl}/payments", [
-                'data' => [
-                    'attributes' => [
-                        'amount'      => $amountInCents,
-                        'currency'    => 'PHP',
-                        'description' => $description,
-                        'source'      => [
-                            'id'   => $sourceId,
-                            'type' => 'source',
-                        ],
-                    ],
-                ],
-            ]);
+  public function attachPaymentIntent(string $paymentIntentId, string $paymentMethodId, string $returnUrl): array
+  {
+    $response = Http::withBasicAuth($this->secretKey, '')->post(
+      "{$this->baseUrl}/payment_intents/{$paymentIntentId}/attach",
+      [
+        'data' => [
+          'attributes' => [
+            'payment_method' => $paymentMethodId,
+            'return_url' => $returnUrl,
+          ],
+        ],
+      ],
+    );
 
-        if ($response->failed()) {
-            throw new \Exception('PayMongo payment creation failed: ' . $response->body());
-        }
-
-        return $response->json('data');
+    if ($response->failed()) {
+      throw new \Exception('PayMongo attach payment intent failed: ' . $response->body());
     }
 
-    // ---- Retrieve a Source ----
+    return $response->json('data');
+  }
 
-    public function getSource(string $sourceId): array
-    {
-        $response = Http::withBasicAuth($this->secretKey, '')
-            ->get("{$this->baseUrl}/sources/{$sourceId}");
+  public function getPaymentIntent(string $paymentIntentId): array
+  {
+    $response = Http::withBasicAuth($this->secretKey, '')->get("{$this->baseUrl}/payment_intents/{$paymentIntentId}");
 
-        if ($response->failed()) {
-            throw new \Exception('PayMongo source retrieval failed: ' . $response->body());
-        }
-
-        return $response->json('data');
+    if ($response->failed()) {
+      throw new \Exception('PayMongo payment intent retrieval failed: ' . $response->body());
     }
 
-    // ---- Verify webhook signature ----
+    return $response->json('data');
+  }
 
-    public function verifyWebhook(string $payload, string $signature): bool
-    {
-        $secret    = config('services.paymongo.webhook_secret');
-        $computed  = hash_hmac('sha256', $payload, $secret);
+  // ---- Webhook ----
 
-        return hash_equals($computed, $signature);
-    }
+  public function verifyWebhook(string $payload, string $signature): bool
+  {
+    $secret = config('services.paymongo.webhook_secret');
+    $computed = hash_hmac('sha256', $payload, $secret);
 
-    // ---- Convert peso to cents ----
+    return hash_equals($computed, $signature);
+  }
 
-    public function toCents(float $amount): int
-    {
-        return (int) round($amount * 100);
-    }
+  // ---- Helpers ----
+
+  public function toCents(float $amount): int
+  {
+    return (int) round($amount * 100);
+  }
 }

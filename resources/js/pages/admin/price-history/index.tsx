@@ -3,8 +3,8 @@ import Pagination from '@/components/store/Pagination';
 import AdminLayout from '@/layouts/admin/layout';
 import type { OptionDetails, PaginatedResponse, PriceHistory } from '@/types/store';
 import { formatDate } from '@/utils/DateUtils';
-import { Link } from '@inertiajs/react';
-import { Book } from 'lucide-react';
+import { formatPrice } from '@/utils/PriceUtils';
+import { ArrowRight, Book } from 'lucide-react';
 
 const PriceHistoryListing = ({
   priceHistory,
@@ -61,13 +61,22 @@ const PriceHistoryListing = ({
           <>
             <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/admin/price-history/${item.id}`}
-                  className="flex flex-col overflow-hidden rounded border border-gray-400 shadow hover:shadow-md"
-                >
-                  <div className="flex gap-x-3 px-2.5 py-2">
-                    <div className="flex-1 space-y-1.5">Price History</div>
+                <div key={item.id} className="flex flex-col overflow-hidden rounded border border-gray-400 shadow">
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <p className="font-bold">{item.variant?.product?.name || 'Product Name'}</p>
+                        <p className="text-xs">{item.variant?.name || 'Variant Name'}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <span className="text-amber-600">{formatPrice(item.oldPrice)}</span>
+                        <ArrowRight size={16} />
+                        <span className="text-orange-600">{formatPrice(item.newPrice)}</span>
+                      </div>
+                    </div>
+                    <div className="flex aspect-square h-10 items-center justify-center rounded border border-gray-300 bg-gray-200 font-bold text-gray-600">
+                      {item.marginAtTime}%
+                    </div>
                   </div>
                   <div className="mt-auto flex justify-between border-t border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-gray-600">
                     <p>
@@ -76,7 +85,7 @@ const PriceHistoryListing = ({
                     </p>
                     <p>{formatDate(item.createdAt)}</p>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
             <Pagination meta={meta} type="advanced" />

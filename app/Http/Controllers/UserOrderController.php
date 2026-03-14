@@ -8,15 +8,13 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\OrderResource;
 use Inertia\Inertia;
 
-class OrderController extends Controller
+class UserOrderController extends Controller
 {
   public function index(Request $request)
   {
     $user = Auth::user();
 
-    $query = Order::where('user_id', $user->id)->with([
-      'items:id,order_id,product_name,variant_name,quantity,price_at_purchase,discount_at_purchase,product_variant_id',
-    ]);
+    $query = Order::where('user_id', $user->id)->with(['items']);
 
     if ($request->filled('search')) {
       $search = $request->search;

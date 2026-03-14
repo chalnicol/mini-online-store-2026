@@ -28,6 +28,9 @@ class Order extends Model
     'status',
     'payment_status',
     'payment_method',
+    'paymongo_source_id', // add
+    'paymongo_payment_id', // add
+    'paymongo_payment_intent_id',
     'delivery_type',
     'delivery_schedule',
     'notes',

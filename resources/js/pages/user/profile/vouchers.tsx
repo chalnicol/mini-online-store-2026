@@ -69,7 +69,7 @@ const VoucherWallet = ({ available, wallet }: { available: VoucherDetails[]; wal
             <button
               key={tab.value}
               type="button"
-              className="cursor-pointer rounded-tl rounded-tr-lg border border-gray-400 bg-gray-200 px-3 py-1.5 text-sm transition-colors duration-300 hover:bg-gray-50 disabled:cursor-default disabled:border-b-transparent disabled:bg-gray-50 disabled:font-bold disabled:text-sky-900"
+              className="min-w-26 cursor-pointer rounded-tl rounded-tr-lg border border-gray-400 px-3 py-1.5 text-sm transition-colors duration-300 hover:bg-gray-50 hover:font-semibold disabled:cursor-default disabled:border-b-transparent disabled:bg-gray-50 disabled:font-bold disabled:text-sky-900"
               disabled={tab.value === currentTab}
               onClick={() => setCurrentTab(tab.value)}
             >

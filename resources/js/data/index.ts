@@ -19,10 +19,10 @@ export const formRules: Record<string, string[]> = {
 };
 
 export const paymentMethods: PaymentMethod[] = [
-  { id: 'cod', name: 'Cash on Delivery', type: 'cod' },
-  { id: 'gcash', name: 'GCash', type: 'gcash' },
-  { id: 'paymaya', name: 'PayMaya', type: 'paymaya' },
-  { id: 'credit_card', name: 'Credit / Debit Card', type: 'credit_card' },
+  { name: 'Cash on Delivery', type: 'cod', active: true },
+  { name: 'GCash', type: 'gcash', active: true },
+  { name: 'PayMaya', type: 'paymaya', active: true },
+  { name: 'Credit / Debit Card', type: 'card', active: false },
 ];
 
 export const deliveryDataTypes: Record<DeliveryType, DeliveryTypeDetails> = {
@@ -60,10 +60,8 @@ export const adnminNavItems: NavItem[] = [
   { id: 7, href: '/admin/vouchers', label: 'Vouchers' },
   { id: 8, href: '/admin/suppliers', label: 'Suppliers' },
   { id: 9, href: '/admin/inventories', label: 'Inventories' },
-  { id: 10, href: '/admin/orders', label: 'Orders' },
   { id: 11, href: '/admin/price-history', label: 'Price History' },
-  { id: 12, href: '/admin/returns', label: 'Returns' },
-  { id: 13, href: '/admin/sales', label: 'Sales' },
+  { id: 10, href: '/admin/orders', label: 'Orders' },
 ];
 
 export const inventoryMovementReasons = [

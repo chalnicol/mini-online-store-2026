@@ -1,10 +1,13 @@
+import ConfirmationModal from '@/components/store/ConfirmationModal';
+import CustomButton from '@/components/store/CustomButton';
+import PromptMessage from '@/components/store/PromptMessage';
 import ReturnRequestModal from '@/components/store/ReturnRequestModal';
 import ProfileLayout from '@/layouts/profile/layout';
-import { cn } from '@/lib/utils';
+import { cn, getImageUrl } from '@/lib/utils';
 import { OrderDetails, OrderStatus } from '@/types/store';
 import { formatPrice } from '@/utils/PriceUtils';
 import { Link, router } from '@inertiajs/react';
-import { ChevronLeft, PackageX } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
 
 const statusConfig: Record<OrderStatus, { label: string; className: string }> = {
@@ -26,18 +29,20 @@ const paymentMethodLabel: Record<string, string> = {
 const OrderDetail = ({ order }: { order: OrderDetails }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toCancelOrder, setToCancelOrder] = useState(false);
 
   const status = statusConfig[order.status];
   const [showReturnModal, setShowReturnModal] = useState(false);
 
   const handleCancel = () => {
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    setToCancelOrder(false);
     setLoading(true);
     setError(null);
     router.post(
       `/profile/orders/${order.id}/cancel`,
       {},
       {
+        preserveScroll: true,
         onError: (errors) => setError(errors.order ?? 'Failed to cancel order.'),
         onFinish: () => setLoading(false),
       },
@@ -53,10 +58,13 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-400 py-1">
         <div className="flex items-center gap-2">
-          <Link href="/profile/orders" className="text-gray-500 hover:text-gray-800">
-            <ChevronLeft size={20} />
+          <Link
+            href="/profile/orders"
+            className="flex aspect-square items-center rounded-full bg-sky-900 px-0.5 text-gray-500 text-white hover:bg-sky-800"
+          >
+            <ChevronLeft size={16} />
           </Link>
-          <h2 className="text-lg font-bold text-gray-900">{order.orderNumber}</h2>
+          <h2 className="text-lg font-bold text-gray-600 lg:text-xl">{order.orderNumber}</h2>
         </div>
         <span
           className={cn('rounded border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase', status.className)}
@@ -65,44 +73,40 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
         </span>
       </div>
 
-      {error && <p className="rounded border-s-4 border-rose-600 bg-red-50 p-2 text-xs text-rose-500">{error}</p>}
+      {error && <PromptMessage type="error" message={error} />}
 
       {/* Items */}
-      <div className="overflow-hidden rounded border border-gray-300">
-        <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
+      <div className="overflow-hidden rounded border border-gray-400">
+        <div className="border-b border-gray-300 bg-gray-100 px-3 py-2">
           <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">Items</p>
         </div>
         <div className="divide-y divide-gray-100">
           {order.items?.map((item) => (
             <div key={item.id} className="flex items-center gap-3 p-3">
-              {item.variant?.imagePath ? (
-                <img
-                  src={item.variant.imagePath}
-                  alt={item.variantName}
-                  className="h-14 w-14 flex-none rounded border border-gray-200 object-cover"
-                />
-              ) : (
-                <div className="flex h-14 w-14 flex-none items-center justify-center rounded border border-gray-200 bg-gray-100">
-                  <PackageX size={20} className="text-gray-300" />
-                </div>
-              )}
+              <img
+                src={getImageUrl(item.variant?.imagePath || null)}
+                alt={item.variantName}
+                className="aspect-square w-14 flex-none rounded border border-gray-200 object-cover"
+              />
               <div className="flex flex-1 justify-between gap-2">
                 <div className="space-y-0.5">
                   <p className="text-sm font-bold text-gray-800">{item.productName}</p>
                   <p className="text-xs text-gray-500">{item.variantName}</p>
-                  {item.variantAttributes && (
+                  {/* {item.variantAttributes && (
                     <p className="text-[10px] text-gray-400">
                       {Object.entries(item.variantAttributes)
                         .map(([k, v]) => `${k}: ${v}`)
                         .join(' · ')}
                     </p>
-                  )}
+                  )} */}
                   <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-800">{formatPrice(item.lineTotal)}</p>
+                <div className="space-y-0.5 text-right">
+                  {/* <p className="text-sm font-bold text-gray-800">{formatPrice(item.priceAtPurchase)}</p> */}
+                  <p className="text-sm font-bold text-gray-800 md:text-base">{formatPrice(item.lineTotal)}</p>
+
                   {item.discountAtPurchase > 0 && (
-                    <p className="text-[10px] text-rose-500">-{formatPrice(item.discountAtPurchase)} off</p>
+                    <p className="text-[10px] text-rose-500 md:text-xs">-{formatPrice(item.discountAtPurchase)} off</p>
                   )}
                 </div>
               </div>
@@ -112,8 +116,8 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
       </div>
 
       {/* Order Summary */}
-      <div className="overflow-hidden rounded border border-gray-300">
-        <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
+      <div className="overflow-hidden rounded border border-gray-400">
+        <div className="border-b border-gray-300 bg-gray-100 px-3 py-2">
           <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">Summary</p>
         </div>
         <div className="space-y-1.5 p-3 text-sm">
@@ -140,8 +144,8 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
 
       {/* Shipping & Payment */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="overflow-hidden rounded border border-gray-300">
-          <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
+        <div className="overflow-hidden rounded border border-gray-400">
+          <div className="border-b border-gray-300 bg-gray-100 px-3 py-2">
             <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">Shipping Address</p>
           </div>
           <div className="space-y-0.5 p-3 text-sm text-gray-600">
@@ -151,8 +155,8 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded border border-gray-300">
-          <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
+        <div className="overflow-hidden rounded border border-gray-400">
+          <div className="border-b border-gray-300 bg-gray-100 px-3 py-2">
             <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payment</p>
           </div>
           <div className="space-y-0.5 p-3 text-sm text-gray-600">
@@ -179,9 +183,9 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
 
       {/* Notes */}
       {order.notes && (
-        <div className="overflow-hidden rounded border border-gray-300">
-          <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
-            <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">Notes</p>
+        <div className="overflow-hidden rounded border border-gray-400">
+          <div className="border-b border-gray-300 bg-gray-100 px-3 py-2">
+            <p className="text-xs font-bold tracking-widest text-gray-600 uppercase">Notes</p>
           </div>
           <p className="p-3 text-sm text-gray-600">{order.notes}</p>
         </div>
@@ -189,36 +193,35 @@ const OrderDetail = ({ order }: { order: OrderDetails }) => {
 
       {/* Actions */}
       {(order.isCancellable || order.isReturnable) && (
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-2">
           {order.isCancellable && (
-            <button
-              onClick={handleCancel}
+            <CustomButton
+              label="Cancel Order"
+              color="danger"
+              onClick={() => setToCancelOrder(true)}
               disabled={loading}
-              className="rounded border border-rose-300 px-4 py-1.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-            >
-              Cancel Order
-            </button>
+            />
           )}
           {order.isReturnable && (
-            // <button
-            //     onClick={handleReturn}
-            //     disabled={loading}
-            //     className="rounded bg-sky-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50"
-            // >
-            //     Request Return
-            // </button>
-
-            <button onClick={() => setShowReturnModal(true)}>Request Return</button>
+            <CustomButton label="Request Return" color="secondary" onClick={() => setShowReturnModal(true)} />
           )}
         </div>
       )}
 
       {/* Footer */}
-      <p className="text-right text-[10px] text-gray-400">
+      <p className="text-[10px] text-gray-400">
         Ordered on {order.createdAt} · Last updated {order.updatedAt}
       </p>
 
       {showReturnModal && <ReturnRequestModal order={order} onClose={() => setShowReturnModal(false)} />}
+
+      {toCancelOrder && (
+        <ConfirmationModal
+          message="Are you sure you want to cancel this order?"
+          onClose={() => setToCancelOrder(false)}
+          onConfirm={handleCancel}
+        />
+      )}
     </div>
   );
 };

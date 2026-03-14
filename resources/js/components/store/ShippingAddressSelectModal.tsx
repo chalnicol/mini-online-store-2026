@@ -1,8 +1,7 @@
 import { type AddressDetails, type ServiceableArea } from '@/types/store';
-import gsap from 'gsap';
 import { AlertTriangle, Check, House } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import AddressForm from './AddressForm';
 import BaseModal from './BaseModal';
 import AddressCard from './CheckoutAddressCard';
@@ -43,27 +42,27 @@ const ShippingAddressSelectModal: React.FC<ShippingAddressSelectModalProps> = ({
     if (!initRef.current) initRef.current = true;
   };
 
-  useEffect(() => {
-    if (initRef.current && contRef.current) {
-      gsap.fromTo(
-        contRef.current,
-        { scale: 0 },
-        {
-          scale: 1,
-          ease: 'elastic.out(1, 0.8)',
-          transformOrigin: 'top center',
-          duration: 0.5,
-          delay: 0.1,
-          overwrite: true,
-        },
-      );
-    }
-    return () => {
-      if (initRef.current && contRef.current) {
-        gsap.killTweensOf(contRef.current);
-      }
-    };
-  }, [tab]);
+  // useEffect(() => {
+  //   if (initRef.current && contRef.current) {
+  //     gsap.fromTo(
+  //       contRef.current,
+  //       { scale: 0 },
+  //       {
+  //         scale: 1,
+  //         ease: 'elastic.out(1, 0.8)',
+  //         transformOrigin: 'top center',
+  //         duration: 0.5,
+  //         delay: 0.1,
+  //         overwrite: true,
+  //       },
+  //     );
+  //   }
+  //   return () => {
+  //     if (initRef.current && contRef.current) {
+  //       gsap.killTweensOf(contRef.current);
+  //     }
+  //   };
+  // }, [tab]);
 
   const selectedAddress = addresses.find((a) => a.id === selected);
   const isSelectedNotServiceable = selectedAddress?.serviceableArea && !selectedAddress.serviceableArea.isActive;

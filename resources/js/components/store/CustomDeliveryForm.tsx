@@ -94,25 +94,26 @@ const CustomDeliveryFormModal: React.FC<CustomDeliveryFormModalProps> = ({ initi
         </div>
 
         {formErrors && (
-          <div className="mt-2 px-3">
+          <div className="mt-2">
             <PromptMessage type="error" errors={formErrors} />
           </div>
         )}
 
-        <form className="mt-2 space-y-3" onSubmit={handleSubmit}>
+        <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           {/* DATE INPUT */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold tracking-wide text-slate-500">Delivery Date</label>
+          <div className="space-y-1">
+            <p className="text-[10px] tracking-widest text-slate-500 uppercase">Delivery Date</p>
             <DateTimePicker
               value={formData.date}
               type="date"
               onChange={(val) => setFormData((prev) => ({ ...prev, date: val }))}
+              maxYear={new Date().getFullYear() + 1}
             />
           </div>
 
           {/* TIME INPUT (Same as before) */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold tracking-wide text-slate-500">Preferred Time</label>
+          <div className="space-y-1">
+            <p className="text-[10px] tracking-widest text-slate-500 uppercase">Preferred Time</p>
             <DateTimePicker
               value={formData.time}
               type="time"

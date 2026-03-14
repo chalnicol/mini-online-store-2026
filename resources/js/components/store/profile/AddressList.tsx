@@ -15,9 +15,9 @@ interface AddressListProps {
 }
 
 const ICON_MAP: Record<AddressDetailsType, React.ReactNode> = {
-  Home: <Home size={30} />,
-  Office: <Building size={30} />,
-  Other: <MapPin size={30} />,
+  Home: <Home size={28} />,
+  Office: <Building size={28} />,
+  Other: <MapPin size={28} />,
 };
 
 const AddressList: React.FC<AddressListProps> = ({ addresses, serviceableAreas }) => {
@@ -101,72 +101,49 @@ const AddressList: React.FC<AddressListProps> = ({ addresses, serviceableAreas }
 
   return (
     <div className="relative">
-      <CustomButton color="primary" onClick={() => setShowForm(true)} loading={processing}>
-        <div className="flex items-center gap-x-1">
-          <Plus size={16} />
+      {/* <CustomButton color="primary" size="sm" onClick={() => setShowForm(true)} loading={processing}>
+        <div className="flex items-center gap-x-1 p-1 text-xs">
+          <Plus size={12} />
           <span>New Address</span>
         </div>
-      </CustomButton>
+      </CustomButton> */}
 
-      {success && <PromptMessage type="success" message={success} className="my-2" />}
+      {/* {success && <PromptMessage type="success" message={success} className="my-2" />} */}
       {hasErrors && <PromptMessage type="error" errors={errors} className="my-2" />}
 
       {addresses.length > 0 ? (
         <>
-          <div className="mt-2">
+          <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
             {addresses.map((address) => (
-              <div
-                key={address.id}
-                className="flex items-start gap-x-2 border-t border-gray-300 px-2 py-2.5 last:border-b even:bg-gray-100"
-              >
-                <div className="flex flex-1 items-start gap-x-2.5">
-                  <div className="flex aspect-square w-16 flex-none flex-col items-center justify-center overflow-hidden rounded border border-gray-300 bg-white shadow">
-                    {ICON_MAP[address.type]}
-                  </div>
-
-                  <div className="space-y-0.5">
-                    <div className="mt-1 space-x-1 text-[10px] font-semibold tracking-widest text-sky-800 uppercase">
-                      <span>{address.type}</span>
-                      {address.isDefault && <span>| Default</span>}
-                    </div>
-
-                    <p className="space-x-0.5 text-sm text-slate-600">
-                      <span> {address.fullAddress}</span>
-                    </p>
-
-                    <div className="space-x-1.5 text-sm font-semibold text-slate-500">
-                      <span>{address.contactPerson}</span>
-                      <span>|</span>
-                      <span>{address.contactNumber}</span>
-                    </div>
-
-                    {/* Not serviceable warning */}
-                    {address.serviceableArea && !address.serviceableArea.isActive && (
-                      <div className="flex items-center gap-2 text-xs text-amber-600">
-                        <AlertTriangle size={14} />
-                        <span>Area not serviceable — cannot be used at checkout</span>
-                      </div>
-                    )}
-
-                    {/* <div className="mt-4 flex items-center space-x-1.5">
-                    <CustomButton
-                      type="button"
-                      label="Edit"
-                      color="secondary"
-                      size="xs"
-                      onClick={() => handleEditAddress(address)}
-                    />
-                    <CustomButton
-                      type="button"
-                      label="Delete"
-                      color="danger"
-                      size="xs"
-                      onClick={() => setToDelete(address)}
-                    />
-                  </div> */}
-                  </div>
+              <div key={address.id} className="flex rounded border border-gray-400 shadow">
+                <div className="flex w-16 flex-none flex-col items-center justify-center gap-1 rounded-s bg-gray-100 py-3 text-gray-600">
+                  {ICON_MAP[address.type]}
+                  <span className="text-[10px] tracking-widest uppercase">{address.type}</span>
                 </div>
-                <div>
+
+                <div className="flex-1 space-y-1 border-s border-gray-400 px-3 py-2">
+                  <p className="space-x-0.5 text-sm leading-normal font-semibold text-slate-600">
+                    {address.isDefault && (
+                      <span className="bg-sky-900 px-1.5 text-xs tracking-wider text-white uppercase">Default</span>
+                    )}
+                    <span> {address.fullAddress}</span>
+                  </p>
+
+                  <p className="space-x-1.5 text-sm font-semibold text-slate-400">
+                    <span>{address.contactPerson}</span>
+                    <span>|</span>
+                    <span>{address.contactNumber}</span>
+                  </p>
+
+                  {/* Not serviceable warning */}
+                  {address.serviceableArea && !address.serviceableArea.isActive && (
+                    <div className="flex items-center gap-2 text-xs text-amber-600">
+                      <AlertTriangle size={14} />
+                      <span>Area not serviceable — cannot be used at checkout</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-2">
                   <MenuOptions
                     pageOptions={generateOptions(address.isDefault)}
                     onOptionsClick={(e) => handleOptionsClick(e, address.id)}
@@ -174,6 +151,14 @@ const AddressList: React.FC<AddressListProps> = ({ addresses, serviceableAreas }
                 </div>
               </div>
             ))}
+            <button
+              className="flex min-h-20 cursor-pointer items-center justify-center rounded border-2 border-dashed border-gray-400 bg-gray-100 text-lg font-bold text-slate-500 hover:border-gray-500 lg:h-auto"
+              onClick={() => setShowForm(true)}
+              disabled={processing}
+            >
+              <Plus size={20} />
+              New Address
+            </button>
           </div>
         </>
       ) : (

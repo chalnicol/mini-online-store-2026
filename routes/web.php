@@ -5,7 +5,7 @@ use Inertia\Inertia;
 
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\AddressController;
-use App\Http\Controllers\OrderController;
+use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartController;
@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PriceHistoryController;
 
 Route::get('/', [StoreController::class, 'index'])->name('home');
@@ -67,10 +68,10 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
   );
 
   // ---- Orders ----
-  Route::get('/profile/orders', [OrderController::class, 'index'])->name('orders.index');
-  Route::get('/profile/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-  Route::post('/profile/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
-  Route::post('/profile/orders/{order}/return', [OrderController::class, 'requestReturn'])->name('orders.return');
+  Route::get('/profile/orders', [UserOrderController::class, 'index'])->name('orders.index');
+  Route::get('/profile/orders/{order}', [UserOrderController::class, 'show'])->name('orders.show');
+  Route::post('/profile/orders/{order}/cancel', [UserOrderController::class, 'cancel'])->name('orders.cancel');
+  Route::post('/profile/orders/{order}/return', [UserOrderController::class, 'requestReturn'])->name('orders.return');
 
   // Returns
   //Route::post('/profile/orders/{order}/return', [OrderReturnController::class, 'store'])->name('orders.return.create');
@@ -124,12 +125,8 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
   );
 
   // Payment
-  Route::post('/checkout/payment/source', [PaymentController::class, 'createSource'])->name('payment.source');
-  Route::get('/checkout/payment/{order}/check', [PaymentController::class, 'checkSource'])->name('payment.check');
   Route::get('/checkout/payment/{order}/return', [PaymentController::class, 'handleReturn'])->name('payment.return');
   Route::get('/checkout/payment/{order}/cancel', [PaymentController::class, 'handleCancel'])->name('payment.cancel');
-
-  // Webhook — exclude from CSRF
   Route::post('/webhooks/paymongo', [PaymentController::class, 'webhook'])->name('webhooks.paymongo');
 
   // -------------------------------------------------------
@@ -196,7 +193,7 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
       Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
       Route::patch('/categories/{category}/restore', [CategoryController::class, 'restore'])->name(
         'categories.restore',
-      ); // ✅ added
+      ); //  added
 
       // ---- Discounts ----
       Route::get('/discounts', [DiscountController::class, 'index'])->name('discounts');
@@ -207,7 +204,7 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
       Route::put('/discounts/{discount}', [DiscountController::class, 'update'])->name('discounts.update');
       Route::patch('/discounts/{discount}/toggle-status', [DiscountController::class, 'toggleStatus'])->name(
         'discounts.toggleStatus',
-      ); // ✅ fixed: was categories.toggleStatus
+      ); //  fixed: was categories.toggleStatus
       Route::delete('/discounts/{discount}', [DiscountController::class, 'destroy'])->name('discounts.destroy');
       Route::patch('/discounts/{discount}/restore', [DiscountController::class, 'restore'])->name('discounts.restore'); // ✅ added
 
@@ -242,7 +239,7 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
       Route::patch('/vouchers/{voucher}/restore', [VoucherController::class, 'restore'])->name('vouchers.restore'); // ✅ added
 
       // ---- Price History ----
-      Route::get('/price-history', [PriceHistoryController::class, 'index'])->name('priceHistory.index');
+      Route::get('/price-history', [PriceHistoryController::class, 'index'])->name('priceHistory');
       Route::get('/price-history/{history}', [PriceHistoryController::class, 'show'])->name('priceHistory.show');
 
       // ---- Inventory ----
@@ -276,7 +273,14 @@ Route::middleware(['auth', 'verified', 'check.blocked'])->group(function () {
       Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
       Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
       Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
-      Route::patch('/suppliers/{supplier}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore'); // ✅ added
+      Route::patch('/suppliers/{supplier}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore'); // added
+
+      // ---- Orders ----
+      Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+      Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+      Route::patch('/orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name(
+        'orders.updateStatus',
+      );
     });
 });
 
